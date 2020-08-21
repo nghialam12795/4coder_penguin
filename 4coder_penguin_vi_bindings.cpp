@@ -143,7 +143,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #endif
 
 #ifndef VIM_PANEL_MARGIN_THICKNESS
-#define VIM_PANEL_MARGIN_THICKNESS 3.0f
+#define VIM_PANEL_MARGIN_THICKNESS 3.5f
 #endif
 
 #ifndef VIM_USE_ECHO_BAR
@@ -151,7 +151,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #endif
 
 #ifndef VIM_CURSOR_ROUNDNESS
-#define VIM_CURSOR_ROUNDNESS 0.9f
+#define VIM_CURSOR_ROUNDNESS 0.5f
 #endif
 
 /// ----------------------------------------------------------------------
@@ -1037,12 +1037,12 @@ struct Vim_Key_Binding {
     String_Const_u8  description;
     u32              flags;
     union {
-        void*                    generic;
-        Vim_Binding_Map*         map;
-        Vim_Motion*              motion;
         Vim_Text_Object*         text_object;
         Vim_Operator*            op;
         Custom_Command_Function* fcoder_command;
+        void*                    generic;
+        Vim_Binding_Map*         map;
+        Vim_Motion*              motion;
     };
 };
 
@@ -4757,7 +4757,7 @@ CUSTOM_DOC("[vim] Inserts text and auto-indents the line on which the cursor sit
     User_Input in = get_current_input(app);
     String_Const_u8 insert = to_writable(&in);
 
-    if (sizeof(VIM_ESCAPE_SEQUENCE) >= 3) {
+    if (sizeof(VIM_ESCAPE_SEQUENCE) >= 1) {
         u8 this_char = insert.size > 0 ? insert.str[0] : 0;
         u8 prev_char = vim_state.prev_insert_char;
         vim_state.prev_insert_char = this_char;
@@ -4938,6 +4938,17 @@ internal Vim_Binding_Map* vim_select_map_(Application_Links* app, Vim_Binding_Ma
 /// ----------------------------------------------------------------------
 /// Hooks
 /// ----------------------------------------------------------------------
+function void vim_draw_character_i_bar(Application_Links *app, Text_Layout_ID layout, i64 pos, ARGB_Color color){
+    Rect_f32 rect = text_layout_character_on_screen(app, layout, pos);
+    rect.x1 = rect.x0 + 6.f;
+    draw_rectangle(app, rect, 0.f, color);
+}
+
+static void vim_draw_character_i_bar(Application_Links *app, Text_Layout_ID layout, i64 pos, FColor color){
+    ARGB_Color argb = fcolor_resolve(color);
+    vim_draw_character_i_bar(app, layout, pos, argb);
+}
+
 function void vim_draw_character_block_selection(Application_Links *app, Buffer_ID buffer, Text_Layout_ID layout, Range_i64 range, f32 roundness, ARGB_Color color) {
     if (range.first < range.one_past_last) {
         i64 i = range.first;
@@ -5009,7 +5020,7 @@ function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_activ
     i64 cursor_pos = view_get_cursor_pos(app, view);
     if (is_active_view) {
         if (is_vim_insert_mode(mode)) {
-            draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(cursor_color, cursor_sub_id));
+            vim_draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(cursor_color, cursor_sub_id));
         } else {
             Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
             Vim_Visual_Selection selection = vim_get_selection(app, view, buffer);
@@ -5409,11 +5420,11 @@ BUFFER_HOOK_SIG(vim_begin_buffer) {
     *insert_map_id_ptr = *map_id_ptr;
     *map_id_ptr = vim_mapid_normal;
 
-    local_persist b32 warned_virtual_whitespace = false;
-    if (!warned_virtual_whitespace && global_config.enable_virtual_whitespace) {
-        vim_echo_alert(app, "Warning: Virtual Whitespace is not yet properly supported by 4coder_vimmish.");
-        warned_virtual_whitespace = true;
-    }
+    // local_persist b32 warned_virtual_whitespace = false;
+    // if (!warned_virtual_whitespace && global_config.enable_virtual_whitespace) {
+    //     vim_echo_alert(app, "Warning: Virtual Whitespace is not yet properly supported by 4coder_penguin.");
+    //     warned_virtual_whitespace = true;
+    // }
 
     return 0;
 }
@@ -5947,6 +5958,8 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_motion_down,                                        vim_key(KeyCode_Down));
     VimBind(vim_motion_up,                                          vim_key(KeyCode_Up));
     VimBind(vim_motion_right,                                       vim_key(KeyCode_Right));
+    VimBind(move_down,                                              vim_key(KeyCode_J, KeyCode_Control));
+    VimBind(move_up,                                                vim_key(KeyCode_K, KeyCode_Control));
     VimBind(vim_motion_to_empty_line_down,                          vim_key(KeyCode_RightBracket, KeyCode_Shift));
     VimBind(vim_motion_to_empty_line_up,                            vim_key(KeyCode_LeftBracket,  KeyCode_Shift));
     VimBind(vim_motion_word,                                        vim_key(KeyCode_W));
@@ -5955,7 +5968,9 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_motion_word_backward,                               vim_key(KeyCode_B));
     VimBind(vim_motion_big_word_backward,                           vim_key(KeyCode_B, KeyCode_Shift));
     VimBind(vim_motion_line_start_textual,                          vim_key(KeyCode_0));
+    VimBind(vim_motion_line_start_textual,                          vim_key(KeyCode_H, KeyCode_Control));
     VimBind(vim_motion_line_end_textual,                            vim_key(KeyCode_4, KeyCode_Shift));
+    VimBind(vim_motion_line_end_textual,                            vim_key(KeyCode_L, KeyCode_Control));
     VimBind(vim_motion_scope,                                       vim_key(KeyCode_5, KeyCode_Shift));
     VimBind(vim_motion_buffer_start_or_goto_line,                   vim_key(KeyCode_G),           vim_key(KeyCode_G));
     VimBind(vim_motion_buffer_end_or_goto_line,                     vim_key(KeyCode_G, KeyCode_Shift));
@@ -6015,30 +6030,18 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_toggle_visual_line_mode,                         vim_key(KeyCode_V, KeyCode_Shift));
     VimBind(vim_toggle_visual_block_mode,                        vim_key(KeyCode_V, KeyCode_Control));
 
-    VimBind(change_active_panel,                                 vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_W));
-    VimBind(change_active_panel,                                 vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_W, KeyCode_Control));
-    VimBind(swap_panels,                                         vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_X));
-    VimBind(swap_panels,                                         vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_X, KeyCode_Control));
-    VimBind(windmove_panel_left,                                 vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_H));
-    VimBind(windmove_panel_left,                                 vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_H, KeyCode_Control));
-    VimBind(windmove_panel_down,                                 vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_J));
-    VimBind(windmove_panel_down,                                 vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_J, KeyCode_Control));
-    VimBind(windmove_panel_up,                                   vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_K));
-    VimBind(windmove_panel_up,                                   vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_K, KeyCode_Control));
-    VimBind(windmove_panel_right,                                vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_L));
-    VimBind(windmove_panel_right,                                vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_L, KeyCode_Control));
-    VimBind(windmove_panel_swap_left,                            vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_H, KeyCode_Shift));
-    VimBind(windmove_panel_swap_left,                            vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_H, KeyCode_Shift, KeyCode_Control));
-    VimBind(windmove_panel_swap_down,                            vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_J, KeyCode_Shift));
-    VimBind(windmove_panel_swap_down,                            vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_J, KeyCode_Shift, KeyCode_Control));
-    VimBind(windmove_panel_swap_up,                              vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_K, KeyCode_Shift));
-    VimBind(windmove_panel_swap_up,                              vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_K, KeyCode_Shift, KeyCode_Control));
-    VimBind(windmove_panel_swap_right,                           vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_L, KeyCode_Shift));
-    VimBind(windmove_panel_swap_right,                           vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_L, KeyCode_Shift, KeyCode_Control));
-    VimBind(vim_split_window_vertical,                           vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_V));
-    VimBind(vim_split_window_vertical,                           vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_V, KeyCode_Control));
-    VimBind(vim_split_window_horizontal,                         vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_S));
-    VimBind(vim_split_window_horizontal,                         vim_key(KeyCode_W, KeyCode_Control), vim_key(KeyCode_S, KeyCode_Control));
+    VimBind(change_active_panel,                                 vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_W));
+    VimBind(swap_panels,                                         vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_X));
+    VimBind(windmove_panel_left,                                 vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_H));
+    VimBind(windmove_panel_down,                                 vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_J));
+    VimBind(windmove_panel_up,                                   vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_K));
+    VimBind(windmove_panel_right,                                vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_L));
+    VimBind(windmove_panel_swap_left,                            vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_H, KeyCode_Shift));
+    VimBind(windmove_panel_swap_down,                            vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_J, KeyCode_Shift));
+    VimBind(windmove_panel_swap_up,                              vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_K, KeyCode_Shift));
+    VimBind(windmove_panel_swap_right,                           vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_L, KeyCode_Shift));
+    VimBind(vim_split_window_vertical,                           vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_V));
+    VimBind(vim_split_window_horizontal,                         vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_S));
 
     VimBind(center_view,                                         vim_key(KeyCode_Z), vim_key(KeyCode_Z));
     VimBind(vim_view_move_line_to_top,                           vim_key(KeyCode_Z), vim_key(KeyCode_T));
@@ -6063,16 +6066,17 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_open_file_in_quotes_in_same_window,              vim_key(KeyCode_G), vim_key(KeyCode_F));
     VimBind(vim_jump_to_definition_under_cursor,                 vim_key(KeyCode_RightBracket, KeyCode_Control));
 
-    VimNameBind(string_u8_litexpr("Files"),                      vim_leader, vim_key(KeyCode_F));
-    VimBind(interactive_new,                                     vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_N));
-    VimBind(interactive_open_or_new,                             vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_E));
-    VimBind(interactive_switch_buffer,                           vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_B));
-    VimBind(interactive_kill_buffer,                             vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_K));
-    VimBind(kill_buffer,                                         vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_D));
-    VimBind(q,                                                   vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_Q));
-    VimBind(qa,                                                  vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_Q, KeyCode_Shift));
-    VimBind(qa,                                                  vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_Q, KeyCode_Shift));
-    VimBind(w,                                                   vim_leader, vim_key(KeyCode_F), vim_key(KeyCode_W));
+    VimNameBind(string_u8_litexpr("Files"),                      vim_leader, vim_key(KeyCode_B));
+    VimBind(interactive_new,                                     vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_N));
+    VimBind(interactive_open,                                    vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_O));
+    VimBind(interactive_open_or_new,                             vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_E));
+    VimBind(interactive_switch_buffer,                           vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_B));
+    VimBind(interactive_kill_buffer,                             vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_K));
+    VimBind(kill_buffer,                                         vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_D));
+    VimBind(q,                                                   vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_Q));
+    VimBind(qa,                                                  vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_Q, KeyCode_Shift));
+    VimBind(qa,                                                  vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_Q, KeyCode_Shift));
+    VimBind(w,                                                   vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_S));
     
     VimNameBind(string_u8_litexpr("Search"),                     vim_leader, vim_key(KeyCode_S));
     VimBind(list_all_substring_locations_case_insensitive,       vim_leader, vim_key(KeyCode_S), vim_key(KeyCode_S));
