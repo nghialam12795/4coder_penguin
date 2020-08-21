@@ -27,7 +27,10 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #define FCODER_PENGUIN_
 
 #include "4coder_default_include.cpp"
+#include "4coder_penguin_utils.cpp"
 
+#define SNIPPET_EXPANSION "4coder_penguin/snippets/snippets.inc"
+global i32 global_snippet_count = 0;
 #include "4coder_penguin/4coder_penguin_vi_bindings.cpp"
 
 #if !defined(META_PASS)
@@ -37,7 +40,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 //~ TODO(nghialam)
 //
 // [x] Vi/Vim modal key-binding
-// [ ] Auto Snippets
+// [x] Auto Snippets
 // [ ] Setup working workflow with 4coder and CMake projects
 
 
@@ -56,18 +59,101 @@ void custom_layer_init(Application_Links* app) {
 #endif
 
     // Penguin Vim Custom Layer
+    global_snippet_count = ArrayCount(default_snippets);
     vim_init(app);
 
     vim_set_default_hooks(app);
     Vim_Key vim_leader_key = vim_key(KeyCode_Space); // Or whatever you prefer
     vim_setup_default_mapping(app, &framework_mapping, vim_leader_key);
+}
 
-    // NOTE: Open calc buffer.
-    {
-        Buffer_ID calc_buffer = create_buffer(app, string_u8_litexpr("*calc*"),
-                                              BufferCreate_NeverAttachToFile |
-                                              BufferCreate_AlwaysNew);
-        buffer_set_setting(app, calc_buffer, BufferSetting_Unimportant, true);
+//~ NOTE: Startup.
+
+// TODO: This is only being used to check if a font file exists because
+// there's a bug in try_create_new_face that crashes the program if a font is
+// not found. This function is only necessary until that is fixed.
+static b32 IsFileReadable(String_Const_u8 path) {
+    b32 result = 0;
+    FILE *file = fopen((char *)path.str, "r");
+    if(file) {
+        result = 1;
+        fclose(file);
+    }
+    return result;
+}
+
+CUSTOM_COMMAND_SIG(penguin_startup)
+CUSTOM_DOC("Penguin startup event") {
+    ProfileScope(app, "default startup");
+    User_Input input = get_current_input(app);
+    if(match_core_code(&input, CoreCode_Startup)) {
+        String_Const_u8_Array file_names = input.event.core.file_names;
+        load_themes_default_folder(app);
+        default_4coder_initialize(app, file_names);
+        default_4coder_side_by_side_panels(app, file_names);
+        if (global_config.automatically_load_project) {
+            load_project(app);
+        }
+        
+        // NOTE(rjf): Initialize stylish fonts.
+        {
+            Scratch_Block scratch(app);
+            String_Const_u8 bin_path = system_get_path(scratch, SystemPath_Binary);
+            print_message(app, bin_path);
+            
+            // NOTE(rjf): Fallback font.
+            Face_ID face_that_should_totally_be_there = get_face_id(app, 0);
+            
+            // NOTE(rjf): Title font.
+            {
+                Face_Description desc = {0};
+                {
+                    desc.font.file_name =  push_u8_stringf(scratch, "%.*sfonts/JetBrainsMono-Bold-Italic.ttf", string_expand(bin_path));
+                    desc.parameters.pt_size = 18;
+                    desc.parameters.bold = 0;
+                    desc.parameters.italic = 0;
+                    desc.parameters.hinting = 0;
+                }
+                
+                if(IsFileReadable(desc.font.file_name)) {
+                    global_styled_title_face = try_create_new_face(app, &desc);
+                } 
+            }
+            
+            // NOTE(rjf): Label font.
+            {
+                Face_Description desc = {0};
+                {
+                    desc.font.file_name =  push_u8_stringf(scratch, "%.*sfonts/JetBrainsMono-Medium-Italic.ttf", string_expand(bin_path));
+                    desc.parameters.pt_size = 10;
+                    desc.parameters.bold = 1;
+                    desc.parameters.italic = 1;
+                    desc.parameters.hinting = 0;
+                }
+                
+                if(IsFileReadable(desc.font.file_name)) {
+                    global_styled_label_face = try_create_new_face(app, &desc);
+                }  
+            }
+            
+            // NOTE(rjf): Small code font.
+            {
+                Face_Description normal_code_desc = get_face_description(app, get_face_id(app, 0));
+                
+                Face_Description desc = {0};
+                {
+                    desc.font.file_name =  push_u8_stringf(scratch, "%.*sfonts/JetBrainsMono-Regular.ttf", string_expand(bin_path));
+                    desc.parameters.pt_size = normal_code_desc.parameters.pt_size - 1;
+                    desc.parameters.bold = 1;
+                    desc.parameters.italic = 1;
+                    desc.parameters.hinting = 0;
+                }
+                
+                if(IsFileReadable(desc.font.file_name)) {
+                    global_small_code_face = try_create_new_face(app, &desc);
+                } 
+            }
+        }
     }
 }
 

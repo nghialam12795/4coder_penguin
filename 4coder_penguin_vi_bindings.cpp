@@ -94,6 +94,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 // - Why does vim_previous_buffer not work. Does the command get called?
 
 #include "4coder_penguin_navigations.cpp"
+#include "4coder_penguin_auto_snippet.cpp"
 
 /// ----------------------------------------------------------------------
 /// User Configuration
@@ -5043,6 +5044,182 @@ function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_activ
     }
 }
 
+static void penguin_render_close_brace_anotation(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id, i64 pos) {
+    Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+    Token_Array token_array = get_token_array_from_buffer(app, buffer);
+    Face_ID face_id = global_small_code_face;
+    
+    if(token_array.tokens != 0) {
+        Token_Iterator_Array it = token_iterator_pos(0, &token_array, pos);
+        Token *token = token_it_read(&it);
+        
+        if(token != 0 && token->kind == TokenBaseKind_ScopeOpen) {
+            pos = token->pos + token->size;
+        }
+		else if(token_it_dec_all(&it)) {
+			token = token_it_read(&it);
+			if (token->kind == TokenBaseKind_ScopeClose &&
+				pos == token->pos + token->size)
+			{
+				pos = token->pos;
+			}
+		}
+	}
+    
+    Scratch_Block scratch(app);
+    Range_i64_Array ranges = get_enclosure_ranges(app, scratch, buffer, pos, RangeHighlightKind_CharacterHighlight);
+    
+    for (i32 i = ranges.count - 1; i >= 0; i -= 1) {
+        Range_i64 range = ranges.ranges[i];
+        
+        if(range.start >= visible_range.start) {
+            continue;
+        }
+        
+        Rect_f32 close_scope_rect = text_layout_character_on_screen(app, text_layout_id, range.end);
+        Vec2_f32 close_scope_pos = { close_scope_rect.x0 + 12, close_scope_rect.y0 };
+        
+        // NOTE(rjf): Find token set before this scope begins.
+		Token *start_token = 0;
+		i64 token_count = 0; {
+            Token_Iterator_Array it = token_iterator_pos(0, &token_array, range.start-1);
+            int paren_nest = 0;
+            
+			for(;;)
+            {
+				Token *token = token_it_read(&it);
+				if(!token_it_dec_non_whitespace(&it))
+				{
+					break;
+                }
+                
+                if(token)
+                {
+                    token_count += 1;
+                    
+                    if(token->kind == TokenBaseKind_ParentheticalClose)
+                    {
+                        ++paren_nest;
+                    }
+                    else if(token->kind == TokenBaseKind_ParentheticalOpen)
+                    {
+                        --paren_nest;
+                    }
+                    else if(paren_nest == 0 &&
+                            (token->kind == TokenBaseKind_ScopeClose ||
+                             token->kind == TokenBaseKind_StatementClose))
+                    {
+                        break;
+                    }
+                    else if((token->kind == TokenBaseKind_Identifier || token->kind == TokenBaseKind_Keyword ||
+                             token->kind == TokenBaseKind_Comment) &&
+                            !paren_nest)
+                    {
+                        start_token = token;
+                        break;
+                    }
+                    
+                }
+                else
+                {
+                    break;
+                }
+			}
+            
+		}
+        
+        // NOTE(rjf): Draw.
+        if(start_token)
+		{
+            //draw_string(app, face_id, string_u8_litexpr("<-"), close_scope_pos, finalize_color(defcolor_comment, 0));
+            //close_scope_pos.x += 32;
+            String_Const_u8 start_line = push_buffer_line(app, scratch, buffer,
+                                                          get_line_number_from_pos(app, buffer, start_token->pos));
+            
+            u64 first_non_whitespace_offset = 0;
+            for(u64 c = 0; c < start_line.size; ++c)
+            {
+                if(start_line.str[c] <= 32)
+                {
+                    ++first_non_whitespace_offset;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            start_line.str += first_non_whitespace_offset;
+            start_line.size -= first_non_whitespace_offset;
+            
+            u32 color = finalize_color(defcolor_comment, 0);
+            color &= 0x00ffffff;
+            color |= 0x80000000;
+            draw_string(app, face_id, start_line, close_scope_pos, color);
+		}
+    }
+}
+
+static void penguin_render_brace_lines(Application_Links *app, Buffer_ID buffer, View_ID view, Text_Layout_ID text_layout_id, i64 pos) {
+    Face_ID face_id = get_face_id(app, buffer);
+    Token_Array token_array = get_token_array_from_buffer(app, buffer);
+    Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+    
+    if (token_array.tokens != 0) {
+        Token_Iterator_Array it = token_iterator_pos(0, &token_array, pos);
+        Token *token = token_it_read(&it);
+        if(token != 0 && token->kind == TokenBaseKind_ScopeOpen) {
+            pos = token->pos + token->size;
+        }
+        else {
+            
+            if(token_it_dec_all(&it)) {
+                token = token_it_read(&it);
+                
+                if (token->kind == TokenBaseKind_ScopeClose &&
+                    pos == token->pos + token->size)
+                {
+                    pos = token->pos;
+                }
+            }
+        }
+    }
+    
+    Face_Metrics metrics = get_face_metrics(app, face_id);
+    
+    Scratch_Block scratch(app);
+    Range_i64_Array ranges = get_enclosure_ranges(app, scratch, buffer, pos, RangeHighlightKind_CharacterHighlight);
+    float x_position = view_get_screen_rect(app, view).x0 + 4 -
+        view_get_buffer_scroll(app, view).position.pixel_shift.x;
+    
+    for (i32 i = ranges.count - 1; i >= 0; i -= 1) {
+        Range_i64 range = ranges.ranges[i];
+        
+        Rect_f32 range_start_rect = text_layout_character_on_screen(app, text_layout_id, range.start);
+        Rect_f32 range_end_rect = text_layout_character_on_screen(app, text_layout_id, range.end);
+        
+        float y_start = 0;
+        float y_end = 10000;
+        
+        if(range.start >= visible_range.start) {
+            y_start = range_start_rect.y0 + metrics.line_height;
+        }
+        if(range.end <= visible_range.end) {
+            y_end = range_end_rect.y0;
+        }
+        
+        Rect_f32 line_rect = {0};
+        line_rect.x0 = x_position;
+        line_rect.x1 = x_position+1;
+        line_rect.y0 = y_start;
+        line_rect.y1 = y_end;
+		FColor color = fcolor_change_alpha(fcolor_id(defcolor_comment), 0.15f);
+        draw_rectangle_fcolor(app, line_rect, 0.5f, color);
+        
+        x_position += metrics.space_advance * 4;
+        
+    }
+}
+
 function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Rect_f32 rect) {
     ProfileScope(app, "render buffer");
 
@@ -5159,6 +5336,14 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     draw_text_layout_default(app, text_layout_id);
 
     draw_set_clip(app, prev_clip);
+
+    {
+        penguin_render_close_brace_anotation(app, buffer, text_layout_id, cursor_pos);
+    }
+
+    {
+        penguin_render_brace_lines(app, buffer, view_id, text_layout_id, cursor_pos);
+    }
 }
 
 function void vim_draw_echo_bar(Application_Links *app, Face_ID face_id, Rect_f32 bar) {
@@ -5331,7 +5516,7 @@ function void vim_render_caller(Application_Links *app, Frame_Info frame_info, V
     b32 is_active_view = (active_view == view_id);
 
     Buffer_ID buffer = view_get_buffer(app, view_id, Access_Always);
-    Face_ID face_id = get_face_id(app, buffer);
+    Face_ID face_id = global_small_code_face;
     Face_Metrics face_metrics = get_face_metrics(app, face_id);
     f32 line_height = face_metrics.line_height;
     f32 digit_advance = face_metrics.decimal_digit_advance;
@@ -5781,7 +5966,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
 
     SelectMap(mapid_global);
 
-    BindCore(default_startup,          CoreCode_Startup);
+    BindCore(penguin_startup,          CoreCode_Startup);
     BindCore(default_try_exit,         CoreCode_TryExit);
     Bind(project_go_to_root_directory, KeyCode_H,      KeyCode_Control);
     Bind(toggle_fullscreen,            KeyCode_Alt,    KeyCode_Return);
@@ -5829,7 +6014,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     BindCore(click_set_cursor_and_mark, CoreCode_ClickActivateView);
     BindMouseMove(click_set_cursor_if_lbutton);
 
-    BindTextInput(write_text_input);
+    BindTextInput(penguin_write_text_input);
 
     Bind(delete_char,                                 KeyCode_Delete);
     Bind(backspace_char,                              KeyCode_Backspace);
@@ -5879,6 +6064,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     BindMouseMove(click_set_cursor_if_lbutton);
 
     BindTextInput(vim_write_text_abbrev_and_auto_indent);
+    // BindTextInput(penguin_write_text_and_auto_indent);
 
     Bind(move_left_alpha_numeric_boundary,                    KeyCode_Left, KeyCode_Control);
     Bind(move_right_alpha_numeric_boundary,                   KeyCode_Right, KeyCode_Control);
@@ -5986,9 +6172,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_motion_repeat_character_seek_same_direction,        vim_key(KeyCode_Semicolon));
     VimBind(vim_motion_repeat_character_seek_reverse_direction,     vim_key(KeyCode_Comma));
 
-    //
     // Normal Vim Map
-    //
 
     VimSelectMap(vim_map_normal);
     VimAddParentMap(vim_map_operator_pending);
@@ -6084,6 +6268,8 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimNameBind(string_u8_litexpr("Tags"),                       vim_leader, vim_key(KeyCode_T));
     VimBind(jump_to_definition,                                  vim_leader, vim_key(KeyCode_T), vim_key(KeyCode_A));
     
+    VimNameBind(string_u8_litexpr("Codes"),                      vim_leader, vim_key(KeyCode_C));
+    VimBind(snippet_lister,                                      vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_S));
     VimBind(vim_toggle_line_comment_range_indent_style,          vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_Space));
 
     VimBind(vim_enter_normal_mode_escape,                        vim_key(KeyCode_Escape));
