@@ -47,7 +47,7 @@ global i32 global_snippet_count = 0;
 //~ NOTE(nghialam): Custom Layer Initilization
 void custom_layer_init(Application_Links* app) {
     Thread_Context* tctx = get_thread_context(app);
-
+    
     // Base 4coder Initialization
     default_framework_init(app);
     set_all_default_hooks(app);
@@ -57,11 +57,11 @@ void custom_layer_init(Application_Links* app) {
 #else
     setup_default_mapping(&framework_mapping, mapid_global, mapid_file, mapid_code);
 #endif
-
+    
     // Penguin Vim Custom Layer
     global_snippet_count = ArrayCount(default_snippets);
     vim_init(app);
-
+    
     vim_set_default_hooks(app);
     Vim_Key vim_leader_key = vim_key(KeyCode_Space); // Or whatever you prefer
     vim_setup_default_mapping(app, &framework_mapping, vim_leader_key);
@@ -99,10 +99,6 @@ CUSTOM_DOC("Penguin startup event") {
         {
             Scratch_Block scratch(app);
             String_Const_u8 bin_path = system_get_path(scratch, SystemPath_Binary);
-            print_message(app, bin_path);
-            
-            // NOTE(rjf): Fallback font.
-            Face_ID face_that_should_totally_be_there = get_face_id(app, 0);
             
             // NOTE(rjf): Title font.
             {
@@ -157,4 +153,4 @@ CUSTOM_DOC("Penguin startup event") {
     }
 }
 
-#endif // !FCODER_PENGUIN_  
+#endif // FCODER_PENGUIN_  
