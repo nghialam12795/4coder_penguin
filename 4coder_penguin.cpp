@@ -91,6 +91,7 @@ CUSTOM_DOC("Penguin startup event") {
         load_themes_default_folder(app);
         default_4coder_initialize(app, file_names);
         default_4coder_side_by_side_panels(app, file_names);
+
         if (global_config.automatically_load_project) {
             load_project(app);
         }

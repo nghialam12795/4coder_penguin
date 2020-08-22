@@ -4950,7 +4950,12 @@ static void vim_draw_character_i_bar(Application_Links *app, Text_Layout_ID layo
     vim_draw_character_i_bar(app, layout, pos, argb);
 }
 
-function void vim_draw_character_block_selection(Application_Links *app, Buffer_ID buffer, Text_Layout_ID layout, Range_i64 range, f32 roundness, ARGB_Color color) {
+// cursor animation variables
+global f32 global_cursor_limit = 0.0f;
+global u32 global_cursor_reached = 0;
+global f32 global_cursor_growth_speed = 0.0f;
+
+function void vim_draw_character_block_selection(Application_Links *app, Buffer_ID buffer, Text_Layout_ID layout, Range_i64 range, f32 roundness, ARGB_Color color, Frame_Info frame_info, i64 cursor_pos) {
     if (range.first < range.one_past_last) {
         i64 i = range.first;
         Rect_f32 first_rect = text_layout_character_on_screen(app, layout, i);
@@ -4985,16 +4990,73 @@ function void vim_draw_character_block_selection(Application_Links *app, Buffer_
                 }
             }
         }
-        draw_rectangle(app, Rf32(x, y), roundness, color);
+
+        Rect_f32 rect = Rf32(x, y);
+
+        if (color != fcolor_resolve(fcolor_id(defcolor_highlight))) {
+
+            Rect_f32 target_rect = text_layout_character_on_screen(app, layout, cursor_pos);
+            Rect_f32 last_rect = rect;
+            
+            // NOTE(Skytrias): counter with delta time
+            f32 size = 10.0f;
+            if (!global_cursor_reached) {
+                if (global_cursor_limit < 1.0f) {
+                    global_cursor_growth_speed = 4.0f;
+                    global_cursor_limit += frame_info.animation_dt * global_cursor_growth_speed;
+                } else {
+                    global_cursor_reached = 1;
+                }
+            } else {
+                if (global_cursor_limit > 0) {
+                    global_cursor_growth_speed = 2.5f;
+                    global_cursor_limit -= frame_info.animation_dt * global_cursor_growth_speed;
+                } else {
+                    global_cursor_reached = 0;
+                }
+            }
+            
+            float x_change = (target_rect.x0 - rect.x0);
+            float y_change = (target_rect.y0 - rect.y0);
+            float cursor_size_x = (target_rect.x1 - target_rect.x0);
+            float cursor_size_y = (target_rect.y1 - target_rect.y0) * (1 + fabsf(y_change) / 60.f);
+            
+            if(fabs(x_change) > 0.f || fabs(y_change) > 0.f) {
+                animate_in_n_milliseconds(app, 0);
+            }
+            
+            rect.x0 += x_change * frame_info.animation_dt * 14.f;
+            rect.y0 += y_change * frame_info.animation_dt * 14.f;
+            rect.x1 = (rect.x0 + cursor_size_x);
+            rect.y1 = (rect.y0 + cursor_size_y);
+            
+            f32 growth = global_cursor_limit * size / 6.0f;
+            rect.x0 -= growth / 8.0f;
+            rect.x1 += growth * 1.5f;
+            
+            if(target_rect.y0 > last_rect.y0) {
+                if(rect.y0 < last_rect.y0) {
+                    rect.y0 = last_rect.y0;
+                }
+            }
+            else {
+                if(rect.y1 > last_rect.y1) {
+                    rect.y1 = last_rect.y1;
+                }
+            }
+        }
+
+        // NOTE: Draw main cursor
+        draw_rectangle(app, rect, roundness, color);
     }
 }
 
-function void vim_draw_character_block_selection(Application_Links *app, Buffer_ID buffer, Text_Layout_ID layout, Range_i64 range, f32 roundness, FColor color) {
+function void vim_draw_character_block_selection(Application_Links *app, Buffer_ID buffer, Text_Layout_ID layout, Range_i64 range, f32 roundness, FColor color, Frame_Info frame_info, i64 cursor_pos) {
     ARGB_Color argb = fcolor_resolve(color);
-    vim_draw_character_block_selection(app, buffer, layout, range, roundness, argb);
+    vim_draw_character_block_selection(app, buffer, layout, range, roundness, argb, frame_info, cursor_pos);
 }
 
-function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_active_view, Buffer_ID buffer, Text_Layout_ID text_layout_id, f32 roundness, f32 outline_thickness, Vim_Mode mode) {
+function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_active_view, Buffer_ID buffer, Text_Layout_ID text_layout_id, f32 roundness, f32 outline_thickness, Vim_Mode mode, Frame_Info frame_info) {
     Managed_ID cursor_color = defcolor_cursor;
     
 #if VIM_USE_CUSTOM_COLORS
@@ -5015,32 +5077,36 @@ function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_activ
         } break;
     }
 #endif
-    
-    i32 cursor_sub_id = default_cursor_sub_id();
-    
-    i64 cursor_pos = view_get_cursor_pos(app, view);
-    if (is_active_view) {
-        if (is_vim_insert_mode(mode)) {
-            vim_draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(cursor_color, cursor_sub_id));
-        } else {
-            Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-            Vim_Visual_Selection selection = vim_get_selection(app, view, buffer);
-            
-            if (selection.kind) {
-                Range_i64 range = {};
-                while (vim_selection_consume_line(app, buffer, &selection, &range, true)) {
-                    // @TODO: Even if I limit the drawing to the visible range, this slows 4coder to a crawl if you select a big amount of text...
-                    range = range_intersect(range, visible_range);
-                    vim_draw_character_block_selection(app, buffer, text_layout_id, range, roundness, fcolor_id(defcolor_highlight));
-                    paint_text_color_fcolor(app, text_layout_id, range, fcolor_id(defcolor_at_highlight));
+
+    b32 has_highlight_range = draw_highlight_range(app, view, buffer, text_layout_id, roundness);
+
+    if (!has_highlight_range) {
+        i32 cursor_sub_id = default_cursor_sub_id();
+        i64 cursor_pos = view_get_cursor_pos(app, view);
+        i64 mark_pos = view_get_mark_pos(app, view);
+        if (is_active_view) {
+            if (is_vim_insert_mode(mode)) {
+                vim_draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(cursor_color, cursor_sub_id));
+            } else {
+                Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+                Vim_Visual_Selection selection = vim_get_selection(app, view, buffer);
+                
+                if (selection.kind) {
+                    Range_i64 range = {};
+                    while (vim_selection_consume_line(app, buffer, &selection, &range, true)) {
+                        // @TODO: Even if I limit the drawing to the visible range, this slows 4coder to a crawl if you select a big amount of text...
+                        range = range_intersect(range, visible_range);
+                        vim_draw_character_block_selection(app, buffer, text_layout_id, range, roundness, fcolor_id(defcolor_highlight), frame_info, cursor_pos);
+                        paint_text_color_fcolor(app, text_layout_id, range, fcolor_id(defcolor_at_highlight));
+                    }
                 }
+                
+                vim_draw_character_block_selection(app, buffer, text_layout_id, Ii64(cursor_pos, cursor_pos + 1), roundness, fcolor_id(cursor_color, cursor_sub_id), frame_info, cursor_pos);
+                paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
             }
-            
-            vim_draw_character_block_selection(app, buffer, text_layout_id, Ii64(cursor_pos, cursor_pos + 1), roundness, fcolor_id(cursor_color, cursor_sub_id));
-            paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
+        } else {
+	        draw_character_wire_frame(app, text_layout_id, cursor_pos, roundness, outline_thickness, fcolor_id(defcolor_cursor));
         }
-    } else {
-        /* Draw nothing at all... */
     }
 }
 
@@ -5220,7 +5286,7 @@ static void penguin_render_brace_lines(Application_Links *app, Buffer_ID buffer,
     }
 }
 
-function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Rect_f32 rect) {
+function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Rect_f32 rect, Frame_Info frame_info) {
     ProfileScope(app, "render buffer");
     
     View_ID active_view = get_active_view(app, Access_Always);
@@ -5299,7 +5365,7 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
             if (!range_size(highlight_range)) {
                 break;
             }
-            vim_draw_character_block_selection(app, buffer, text_layout_id, highlight_range, cursor_roundness, fcolor_id(defcolor_highlight_white));
+            vim_draw_character_block_selection(app, buffer, text_layout_id, highlight_range, cursor_roundness, fcolor_id(defcolor_highlight_white), frame_info, cursor_pos);
             pos = highlight_range.max;
         }
     }
@@ -5319,7 +5385,7 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
 #else
             FColor highlight_color = fcolor_id(defcolor_highlight);
 #endif
-            vim_draw_character_block_selection(app, buffer, text_layout_id, range, cursor_roundness, highlight_color);
+            vim_draw_character_block_selection(app, buffer, text_layout_id, range, cursor_roundness, highlight_color, frame_info, cursor_pos);
             paint_text_color_fcolor(app, text_layout_id, range, fcolor_id(defcolor_at_highlight));
             pos = seek_pos;
         }
@@ -5327,15 +5393,13 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
 #endif
     
     // NOTE(allen): Cursor
-    vim_draw_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, vim_state.mode);
+    vim_draw_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, vim_state.mode, frame_info);
     
     // NOTE(allen): Fade ranges
     paint_fade_ranges(app, text_layout_id, buffer);
     
     // NOTE(allen): put the actual text on the actual screen
     draw_text_layout_default(app, text_layout_id);
-    
-    draw_set_clip(app, prev_clip);
     
     {
         penguin_render_close_brace_anotation(app, buffer, text_layout_id, cursor_pos);
@@ -5344,6 +5408,8 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     {
         penguin_render_brace_lines(app, buffer, view_id, text_layout_id, cursor_pos);
     }
+
+    draw_set_clip(app, prev_clip);
 }
 
 function void vim_draw_echo_bar(Application_Links *app, Face_ID face_id, Rect_f32 bar) {
@@ -5590,7 +5656,7 @@ function void vim_render_caller(Application_Links *app, Frame_Info frame_info, V
     }
     
     // NOTE(allen): draw the buffer
-    vim_render_buffer(app, view_id, face_id, buffer, text_layout_id, region);
+    vim_render_buffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
     
     text_layout_free(app, text_layout_id);
     draw_set_clip(app, prev_clip);
