@@ -27,7 +27,9 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #define FCODER_PENGUIN_
 
 #include "4coder_default_include.cpp"
+
 #include "4coder_penguin_utils.cpp"
+#include "4coder_penguin_dashboard.cpp"
 
 #define SNIPPET_EXPANSION "4coder_penguin/snippets/snippets.inc"
 global i32 global_snippet_count = 0;
@@ -95,6 +97,9 @@ CUSTOM_DOC("Penguin startup event") {
         if (global_config.automatically_load_project) {
             load_project(app);
         }
+
+        // NOTE: Open Dashboard
+        // dashboard_open(app);
         
         // NOTE(rjf): Initialize stylish fonts.
         {

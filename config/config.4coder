@@ -37,12 +37,12 @@ mark_thickness = 2;
 
 // lister_roundess is a value [0,50] setting the radius of
 // the lister items' roundness as a percentage of their height
-lister_roundness = 10;
+lister_roundness = 5;
 
 // Code Wrapping
 treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm";
 enable_virtual_whitespace = true;
-virtual_whitespace_regular_indent = 4;
+virtual_whitespace_regular_indent = 2;
 enable_code_wrapping = true;
 
 // This only applies to code files in code-wrapping mode.
@@ -53,7 +53,7 @@ automatically_indent_text_on_save = true;
 automatically_save_changes_on_build = true;
 
 // Load project on startup
-automatically_load_project = false;
+automatically_load_project = true;
 
 // Indentation
 indent_with_tabs = false;

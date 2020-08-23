@@ -95,6 +95,8 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 
 #include "4coder_penguin_navigations.cpp"
 #include "4coder_penguin_auto_snippet.cpp"
+#include "4coder_penguin_command.cpp"
+
 
 /// ----------------------------------------------------------------------
 /// User Configuration
@@ -4993,7 +4995,7 @@ function void vim_draw_character_block_selection(Application_Links *app, Buffer_
 
         Rect_f32 rect = Rf32(x, y);
 
-        if (color != fcolor_resolve(fcolor_id(defcolor_highlight))) {
+        if (color == fcolor_resolve(fcolor_id(defcolor_cursor))) {
 
             Rect_f32 target_rect = text_layout_character_on_screen(app, layout, cursor_pos);
             Rect_f32 last_rect = rect;
@@ -5021,9 +5023,7 @@ function void vim_draw_character_block_selection(Application_Links *app, Buffer_
             float cursor_size_x = (target_rect.x1 - target_rect.x0);
             float cursor_size_y = (target_rect.y1 - target_rect.y0) * (1 + fabsf(y_change) / 60.f);
             
-            if(fabs(x_change) > 0.f || fabs(y_change) > 0.f) {
-                animate_in_n_milliseconds(app, 0);
-            }
+            animate_in_n_milliseconds(app, 0);
             
             rect.x0 += x_change * frame_info.animation_dt * 14.f;
             rect.y0 += y_change * frame_info.animation_dt * 14.f;
@@ -5104,10 +5104,38 @@ function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_activ
                 vim_draw_character_block_selection(app, buffer, text_layout_id, Ii64(cursor_pos, cursor_pos + 1), roundness, fcolor_id(cursor_color, cursor_sub_id), frame_info, cursor_pos);
                 paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
             }
+            paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
+            draw_character_wire_frame(app, text_layout_id, mark_pos, roundness, outline_thickness, fcolor_id(defcolor_mark));
         } else {
 	        draw_character_wire_frame(app, text_layout_id, cursor_pos, roundness, outline_thickness, fcolor_id(defcolor_cursor));
+            draw_character_wire_frame(app, text_layout_id, cursor_pos, roundness, outline_thickness, fcolor_id(defcolor_cursor));
         }
     }
+}
+
+static void penguin_render_brace_hightlight(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id, i64 pos, ARGB_Color *colors, i32 color_count) {
+    Token_Array token_array = get_token_array_from_buffer(app, buffer);
+    if (token_array.tokens != 0) {
+        Token_Iterator_Array it = token_iterator_pos(0, &token_array, pos);
+        Token *token = token_it_read(&it);
+        if(token != 0 && token->kind == TokenBaseKind_ScopeOpen) {
+            pos = token->pos + token->size;
+        } else {
+            
+            if(token_it_dec_all(&it)) {
+                token = token_it_read(&it);
+                
+                if (token->kind == TokenBaseKind_ScopeClose && pos == token->pos + token->size) {
+                    pos = token->pos;
+                }
+            }
+        }
+    }
+    
+    draw_enclosures(app, text_layout_id, buffer,
+                    pos, FindNest_Scope,
+                    RangeHighlightKind_CharacterHighlight,
+                    0, 0, colors, color_count);
 }
 
 static void penguin_render_close_brace_anotation(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id, i64 pos) {
@@ -5320,6 +5348,13 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
         Color_Array colors = finalize_color_array(defcolor_back_cycle);
         draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
     }
+
+    // NOTE(rjf): Brace highlight
+    {
+        ARGB_Color colors[] = { 0xff8ffff2, };
+       
+        penguin_render_brace_hightlight(app, buffer, text_layout_id, cursor_pos, colors, sizeof(colors)/sizeof(colors[0]));
+    }
     
     if (global_config.use_error_highlight || global_config.use_jump_highlight){
         // NOTE(allen): Error highlight
@@ -5343,6 +5378,10 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
         Color_Array colors = finalize_color_array(defcolor_text_cycle);
         draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
     }
+
+    if (is_active_view) {
+        penguin_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
+    }
     
     // NOTE(allen): Line highlight
     if (!is_vim_visual_mode(vim_state.mode) && global_config.highlight_line_at_cursor && is_active_view){
@@ -5353,7 +5392,7 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     // NOTE(allen): Cursor shape
     Face_Metrics metrics = get_face_metrics(app, face_id);
     f32 cursor_roundness = (metrics.normal_advance*0.5f)*VIM_CURSOR_ROUNDNESS;
-    f32 mark_thickness = 2.0f;
+    f32 mark_thickness = 4.0f;
     
     Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
     
@@ -5410,6 +5449,10 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     }
 
     draw_set_clip(app, prev_clip);
+
+    if(buffer == dashboard_buffer_id) {
+        draw_dashboard_extras(app, text_layout_id, face_id, rect);
+    }
 }
 
 function void vim_draw_echo_bar(Application_Links *app, Face_ID face_id, Rect_f32 bar) {
@@ -6086,6 +6129,8 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     Bind(backspace_char,                              KeyCode_Backspace);
     Bind(move_up,                                     KeyCode_Up);
     Bind(move_down,                                   KeyCode_Down);
+    Bind(move_up,                                     KeyCode_J, KeyCode_Control);
+    Bind(move_down,                                   KeyCode_K, KeyCode_Control);
     Bind(move_left,                                   KeyCode_Left);
     Bind(move_right,                                  KeyCode_Right);
     Bind(seek_end_of_line,                            KeyCode_End);
@@ -6280,6 +6325,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_toggle_visual_line_mode,                         vim_key(KeyCode_V, KeyCode_Shift));
     VimBind(vim_toggle_visual_block_mode,                        vim_key(KeyCode_V, KeyCode_Control));
     
+    VimNameBind(string_u8_litexpr("Window"),                     vim_leader, vim_key(KeyCode_W));
     VimBind(change_active_panel,                                 vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_W));
     VimBind(swap_panels,                                         vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_X));
     VimBind(windmove_panel_left,                                 vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_H));
@@ -6313,8 +6359,9 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_go_to_mark,                                      vim_key(KeyCode_Tick));
     VimBind(vim_go_to_mark_less_history,                         vim_key(KeyCode_G), vim_key(KeyCode_Quote));
     VimBind(vim_go_to_mark_less_history,                         vim_key(KeyCode_G), vim_key(KeyCode_Tick));
-    VimBind(vim_open_file_in_quotes_in_same_window,              vim_key(KeyCode_G), vim_key(KeyCode_F));
-    VimBind(vim_jump_to_definition_under_cursor,                 vim_key(KeyCode_RightBracket, KeyCode_Control));
+    VimBind(vim_jump_to_definition_under_cursor,                 vim_key(KeyCode_G), vim_key(KeyCode_D));
+    VimBind(vim_open_file_in_quotes_in_same_window,              vim_key(KeyCode_G), vim_key(KeyCode_F), vim_key(KeyCode_F));
+    VimBind(open_file_in_quotes,                                 vim_key(KeyCode_G), vim_key(KeyCode_F), vim_key(KeyCode_O));
     
     VimNameBind(string_u8_litexpr("Files"),                      vim_leader, vim_key(KeyCode_B));
     VimBind(interactive_new,                                     vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_N));
@@ -6323,10 +6370,10 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(interactive_switch_buffer,                           vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_B));
     VimBind(interactive_kill_buffer,                             vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_K));
     VimBind(kill_buffer,                                         vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_D));
+    VimBind(w,                                                   vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_S));
     VimBind(q,                                                   vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_Q));
     VimBind(qa,                                                  vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_Q, KeyCode_Shift));
-    VimBind(qa,                                                  vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_Q, KeyCode_Shift));
-    VimBind(w,                                                   vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_S));
+    VimBind(qa,                                                  vim_key(KeyCode_Z, KeyCode_Shift), vim_key(KeyCode_Z, KeyCode_Shift));
     
     VimNameBind(string_u8_litexpr("Search"),                     vim_leader, vim_key(KeyCode_S));
     VimBind(list_all_substring_locations_case_insensitive,       vim_leader, vim_key(KeyCode_S), vim_key(KeyCode_S));
@@ -6337,6 +6384,11 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimNameBind(string_u8_litexpr("Codes"),                      vim_leader, vim_key(KeyCode_C));
     VimBind(snippet_lister,                                      vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_S));
     VimBind(vim_toggle_line_comment_range_indent_style,          vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_Space));
+
+    VimNameBind(string_u8_litexpr("Project"),                    vim_leader, vim_key(KeyCode_P));
+    VimBind(project_go_to_root_directory,                        vim_leader, vim_key(KeyCode_P), vim_key(KeyCode_R));
+    VimBind(list_all_locations_of_identifier,                    vim_leader, vim_key(KeyCode_P), vim_key(KeyCode_F));
+    VimBind(list_all_locations,                                  vim_leader, vim_key(KeyCode_P), vim_key(KeyCode_F, KeyCode_Shift));
     
     VimBind(vim_enter_normal_mode_escape,                        vim_key(KeyCode_Escape));
     VimBind(vim_isearch_word_under_cursor,                       vim_key(KeyCode_8, KeyCode_Shift));
