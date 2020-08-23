@@ -96,6 +96,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #include "4coder_penguin_navigations.cpp"
 #include "4coder_penguin_auto_snippet.cpp"
 #include "4coder_penguin_command.cpp"
+#include "4coder_penguin_avy.cpp"
 
 
 /// ----------------------------------------------------------------------
@@ -138,15 +139,15 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #endif
 
 #ifndef VIM_FILE_BAR_ON_BOTTOM
-#define VIM_FILE_BAR_ON_BOTTOM 0
+#define VIM_FILE_BAR_ON_BOTTOM 1
 #endif
 
 #ifndef VIM_DRAW_PANEL_MARGINS
-#define VIM_DRAW_PANEL_MARGINS 1 // 0: don't draw, 1: minimal vertical margins, 2: full margins
+#define VIM_DRAW_PANEL_MARGINS 2 // 0: don't draw, 1: minimal vertical margins, 2: full margins
 #endif
 
 #ifndef VIM_PANEL_MARGIN_THICKNESS
-#define VIM_PANEL_MARGIN_THICKNESS 1.0f
+#define VIM_PANEL_MARGIN_THICKNESS 1.5f
 #endif
 
 #ifndef VIM_USE_ECHO_BAR
@@ -4957,6 +4958,358 @@ global f32 global_cursor_limit = 0.0f;
 global u32 global_cursor_reached = 0;
 global f32 global_cursor_growth_speed = 0.0f;
 
+function void vim_draw_vertical_line_highlight_range(Application_Links *app, View_ID view_id, Text_Layout_ID text_layout_id, Range_i64 range, ARGB_Color argb_color, f32 width_multiplier = 0.1f) {
+    f32 roundness = 2.0f;
+    
+    Rect_f32 view_rect = view_get_screen_rect(app, view_id);
+    Rect_f32 clip = draw_set_clip(app, view_rect);
+    
+    Rect_f32 min_rect = text_layout_character_on_screen(app, text_layout_id, range.min);
+    Rect_f32 max_rect = text_layout_character_on_screen(app, text_layout_id, range.max);
+    
+    f32 lower_bound_y;
+    f32 upper_bound_y;
+    if(min_rect.y0 < max_rect.y0) {
+        lower_bound_y = min_rect.y0;
+        upper_bound_y = max_rect.y1;
+    }
+    else {
+        lower_bound_y = max_rect.y0;
+        upper_bound_y = min_rect.y1;
+    }
+    
+    Face_ID face_id = get_face_id(app, 0);
+    Face_Metrics metrics = get_face_metrics(app, face_id);
+    f32 width = metrics.normal_advance * width_multiplier;
+    
+    Rect_f32 left_rect  = Rf32(view_rect.x0, lower_bound_y, view_rect.x0 + width, upper_bound_y);
+    Rect_f32 right_rect = Rf32(view_rect.x1 - width, lower_bound_y, view_rect.x1, upper_bound_y);
+    if(min_rect.y0 < max_rect.y0) {
+        left_rect.y0 += metrics.line_height;
+        right_rect.y1 -= metrics.line_height;
+    }
+    else {
+        left_rect.y1  -= metrics.line_height;
+        right_rect.y0 += metrics.line_height;
+    }
+    
+#if 0
+    // @note: Fill rect
+    if(min_rect.y0 < max_rect.y0) {
+        right_rect = min_rect;
+        right_rect.x1 = view_rect.x1;
+        
+        left_rect = max_rect;
+        left_rect.x0 = view_rect.x0;
+        
+        
+        Rect_f32 center_rect;
+        center_rect.x0 = view_rect.x0;
+        center_rect.x1 = view_rect.x1;
+        center_rect.y0 = min_rect.y1;
+        center_rect.y1 = max_rect.y0;
+        draw_rectangle(app, center_rect, roundness, argb_color);
+    }
+    else {
+        Rect_f32 center_rect;
+        center_rect.x0 = min_rect.x0;
+        center_rect.x1 = max_rect.x1;
+        center_rect.y0 = min_rect.y1;
+        center_rect.y1 = max_rect.y0;
+        draw_rectangle(app, center_rect, roundness, argb_color);
+    }
+#endif
+    
+#if 0
+    // @note: Draw additional horizontal outline
+    f32 height = metrics.line_height * 0.06f;
+    
+    Rect_f32 top_rect1;
+    top_rect1.x0 = view_rect.x0;
+    top_rect1.x1 = min_rect.x0;
+    top_rect1.y0 = min_rect.y1;
+    top_rect1.y1 = top_rect1.y0 + height;
+    
+    Rect_f32 bottom_rect1;
+    bottom_rect1.x0 = max_rect.x1;
+    bottom_rect1.x1 = view_rect.x1;
+    bottom_rect1.y1 = max_rect.y0;
+    bottom_rect1.y0 = bottom_rect1.y1 - height;
+    
+    draw_rectangle(app, top_rect1, roundness, argb_color);
+    draw_rectangle(app, bottom_rect1, roundness, argb_color);
+    
+    Rect_f32 top_rect2;
+    top_rect2.x0 = min_rect.x1;
+    top_rect2.x1 = view_rect.x1;
+    top_rect2.y0 = min_rect.y0;
+    top_rect2.y1 = top_rect2.y0 - height;
+    
+    Rect_f32 bottom_rect2;
+    bottom_rect2.x0 = view_rect.x0;
+    bottom_rect2.x1 = max_rect.x0;
+    bottom_rect2.y1 = max_rect.y1;
+    bottom_rect2.y0 = bottom_rect2.y1 + height;
+    
+    draw_rectangle(app, top_rect2, roundness, argb_color);
+    draw_rectangle(app, bottom_rect2, roundness, argb_color);
+#endif
+    
+    draw_rectangle(app, left_rect,  roundness, argb_color);
+    draw_rectangle(app, right_rect, roundness, argb_color);
+    
+    draw_set_clip(app, clip);
+}
+
+function void vim_draw_vertical_line_highlight_range(Application_Links *app, View_ID view_id, Text_Layout_ID text_layout_id, Range_i64 range, FColor color, f32 width_multiplier = 0.05f) {
+    ARGB_Color argb = fcolor_resolve(color);
+    vim_draw_vertical_line_highlight_range(app, view_id, text_layout_id, range, argb, width_multiplier);
+}
+
+// NOTE: Draw cursor mark
+function void vim_draw_cursor_mark(Application_Links *app, View_ID view_id, b32 is_active_view, Buffer_ID buffer_id, Text_Layout_ID text_layout_id, f32 cursor_roundness, f32 mark_outline_thickness) {
+    Managed_Scope view_scope = view_get_managed_scope(app, view_id);
+    b32 is_mode_insert = (vim_state.mode == VimMode_Insert);
+    
+    // @note draw cursor mark
+    i64 cursor_pos = view_get_cursor_pos(app, view_id);
+    i64 mark_pos = view_get_mark_pos(app, view_id);
+    b32 cursor_before_mark = (cursor_pos <= mark_pos);
+    // @note cursor
+    if (is_active_view && is_mode_insert) {
+        draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(defcolor_cursor));
+    }
+    else if (is_active_view) {
+        draw_character_block(app, text_layout_id, cursor_pos, cursor_roundness, fcolor_id(defcolor_cursor));
+        paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
+    }
+    else {
+        draw_character_wire_frame(app, text_layout_id, cursor_pos, cursor_roundness, mark_outline_thickness, fcolor_id(defcolor_cursor));
+    }
+    // @note mark
+    if (!is_mode_insert) {
+        draw_character_wire_frame(app, text_layout_id, mark_pos, cursor_roundness, mark_outline_thickness, fcolor_id(defcolor_mark));
+    }
+}
+
+// NOTE: Shooth cursor and mark
+//
+// Source: https://github.com/ryanfleury/4coder_fleury
+
+static void vim_do_the_cursor_interpolation(Application_Links *app, Frame_Info frame_info, Rect_f32 *rect, Rect_f32 *last_rect, Rect_f32 target) {
+    *last_rect = *rect;
+    // NOTE(Skytrias): counter with delta time
+    f32 size = 10.0f;
+    if (!global_cursor_reached) {
+        if (global_cursor_limit < 1.0f) {
+            global_cursor_growth_speed = 4.0f;
+            global_cursor_limit += frame_info.animation_dt * global_cursor_growth_speed;
+        } else {
+            global_cursor_reached = 1;
+        }
+    } else {
+        if (global_cursor_limit > 0) {
+            global_cursor_growth_speed = 2.5f;
+            global_cursor_limit -= frame_info.animation_dt * global_cursor_growth_speed;
+        } else {
+            global_cursor_reached = 0;
+        }
+    }
+    
+    float x_change = target.x0 - rect->x0;
+    float y_change = target.y0 - rect->y0;
+    
+    float cursor_size_x = (target.x1 - target.x0);
+    float cursor_size_y = (target.y1 - target.y0) * (1 + fabsf(y_change) / 80.f);
+    
+    animate_in_n_milliseconds(app, 0);
+    
+    rect->x0 += (x_change) * frame_info.animation_dt * 20.f;
+    rect->y0 += (y_change) * frame_info.animation_dt * 20.f;
+    rect->x1 = rect->x0 + cursor_size_x;
+    rect->y1 = rect->y0 + cursor_size_y;
+
+    f32 growth = global_cursor_limit * size / 6.0f;
+    rect->x0 -= growth / 8.0f;
+    rect->x1 += growth * 1.5f;
+    rect->y0 -= growth / 8.0f;
+    rect->y1 += growth * 1.5f;
+    
+    if (target.y0 > last_rect->y0) {
+        if (rect->y0 < last_rect->y0) {
+            rect->y0 = last_rect->y0;
+        }
+    }
+    else {
+        if (rect->y1 > last_rect->y1) {
+            rect->y1 = last_rect->y1;
+        }
+    }
+}
+
+function void vim_draw_smooth_cursor_mark(Application_Links *app, View_ID view_id, b32 is_active_view, Buffer_ID buffer_id, Text_Layout_ID text_layout_id, f32 cursor_roundness, f32 mark_outline_thickness, Frame_Info frame_info) {
+    Managed_Scope view_scope = view_get_managed_scope(app, view_id);
+    b32 is_mode_insert = (vim_state.mode == VimMode_Insert);
+    
+    i64 cursor_pos = view_get_cursor_pos(app, view_id);
+    i64 mark_pos = view_get_mark_pos(app, view_id);
+    b32 cursor_before_mark = (cursor_pos <= mark_pos);
+    
+    // @note: Do the interpolation
+    Rect_f32 view_rect = view_get_screen_rect(app, view_id);
+    Rect_f32 clip = draw_set_clip(app, view_rect);
+    Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+    
+    if (is_active_view) {
+        //~ Cursor
+        Rect_f32 target_cursor = text_layout_character_on_screen(app, text_layout_id, cursor_pos);
+        
+        if (cursor_pos < visible_range.start || cursor_pos > visible_range.end) {
+            f32 width = target_cursor.x1 - target_cursor.x0;
+            target_cursor.x0 = view_rect.x0;
+            target_cursor.x1 = target_cursor.x0 + width;
+        }
+        
+        vim_do_the_cursor_interpolation(app, frame_info, &global_cursor_rect, &global_last_cursor_rect, target_cursor);
+        
+        //~ Mark
+        // Rect_f32 target_mark = text_layout_character_on_screen(app, text_layout_id, mark_pos);
+        
+        // if (mark_pos > visible_range.end) {
+        //     target_mark.x0 = 0;
+        //     target_mark.y0 = view_rect.y1;
+        //     target_mark.y1 = view_rect.y1;
+        // }
+        
+        // if (mark_pos < visible_range.start || mark_pos > visible_range.end) {
+        //     f32 width = target_mark.x1 - target_mark.x0;
+        //     target_mark.x0 = view_rect.x0;
+        //     target_mark.x1 = target_mark.x0 + width;
+        // }
+        
+        // vim_do_the_cursor_interpolation(app, frame_info, &global_mark_rect, &global_last_mark_rect, target_mark);
+    }
+    //~
+    
+    // @note Draw cursor
+    if (is_active_view && is_mode_insert) {
+        // draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(defcolor_cursor));
+        // global_cursor_rect.x1 = global_cursor_rect.x0 + 1.f;
+        // draw_rectangle(app, global_cursor_rect, 0.f, fcolor_resolve(fcolor_id(defcolor_cursor)));
+    }
+    else if (is_active_view) {
+        // draw_character_block(app, text_layout_id, cursor_pos, cursor_roundness, fcolor_id(defcolor_cursor));
+        draw_rectangle(app, global_cursor_rect, cursor_roundness, fcolor_resolve(fcolor_id(defcolor_cursor)));
+        
+        paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
+    }
+    
+    draw_set_clip(app, clip);
+}
+
+
+// @note Draw visual mode highlight
+// function void vim_draw_highlight(Application_Links *app, View_ID view_id, b32 is_active_view, Buffer_ID buffer_id,
+//                    Text_Layout_ID text_layout_id, f32 cursor_roundness, f32 mark_outline_thickness) {
+//     Managed_Scope view_scope = view_get_managed_scope(app, view_id);
+    
+//     // @note draw highlight
+//     Range_i64 range = vim_state.selection_range;
+//     if (vim_state.mode == VimMode_Visual) {
+//         draw_character_block(app, text_layout_id, range, cursor_roundness, fcolor_id(defcolor_highlight));
+//     }
+//     else if (vim_state.mode == VimMode_VisualLine) {
+//         // @note get_line_range_from_pos_range takes a range that is NOT one_past_last.
+//         Range_i64 line_range = get_line_range_from_pos_range(app, buffer_id, Ii64(range.start, range.one_past_last - 1));
+//         draw_line_highlight(app, text_layout_id, line_range, fcolor_id(defcolor_highlight));
+//     }
+// }
+
+// @note Draw visual mode whitespaces
+inline void vim_draw_character_pos_circle(Application_Links *app, Face_ID face_id, Buffer_ID buffer_id, Text_Layout_ID text_layout_id, i64 pos, ARGB_Color argb) {
+    Face_Metrics face_metrics = get_face_metrics(app, face_id);
+    f32 roundness = (face_metrics.normal_advance*0.5f)*1.1f;
+    
+    Rect_f32 char_rect = text_layout_character_on_screen(app, text_layout_id, pos);
+    
+    f32 width = char_rect.x1 - char_rect.x0;
+    f32 height = char_rect.y1 - char_rect.y0;
+    f32 offset = (height-width) * 0.5f;
+    char_rect.y0 += offset;
+    char_rect.y1 -= offset;
+    
+    f32 scaling = width * 0.1f;
+    char_rect.y0 += scaling;
+    char_rect.y1 -= scaling;
+    char_rect.x0 += scaling;
+    char_rect.x1 -= scaling;
+    
+    i64 line_end_pos = get_line_end_pos_from_pos(app, buffer_id, pos);
+    if (pos < line_end_pos-1) {
+        draw_rectangle(app, char_rect, roundness, argb);
+    }
+    else {
+        f32 thickness = (width * 0.25f);
+        draw_rectangle_outline(app, char_rect, roundness, thickness, argb);
+    }
+    
+    /*
+    draw_rectangle(Application_Links* app, Rect_f32 rect, f32 roundness, ARGB_Color color);
+    draw_rectangle_outline(Application_Links* app, Rect_f32 rect, f32 roundness, f32 thickness, ARGB_Color color);
+    */
+    // paint_text_color(app, text_layout_id, range, argb);
+}
+
+inline void vim_draw_whitespaces_in_range(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer_id, Text_Layout_ID text_layout_id, Token_Array *token_array, Range_i64 range, ARGB_Color argb) {
+    if (token_array == 0 || token_array->tokens == 0)  return;
+    
+    i64 first_index = token_index_from_pos(token_array, range.first);
+    Token_Iterator_Array it = token_iterator_index(0, token_array, first_index);
+    
+    Scratch_Block scratch(app);
+    for (;;) {
+        Temp_Memory_Block temp(scratch);
+        Token *token = token_it_read(&it);
+        if (!token || token->pos >= range.one_past_last) {
+            break;
+        }
+        
+        String_Const_u8 lexeme = {};
+        if (token->kind == TokenBaseKind_Whitespace ||
+            token->kind == TokenBaseKind_Comment    ||
+            token->kind == TokenBaseKind_LiteralString) {
+            // lexeme = push_token_lexeme(app, scratch, (Buffer_ID)it.user_id, token);
+            Range_i64 token_range = Ii64_size(token->pos, token->size);
+            lexeme = push_buffer_range(app, scratch, buffer_id, token_range);
+            for (i64 pos = token_range.start; pos < token_range.one_past_last; ++pos) {
+                if (pos < range.first)  continue;
+                if (pos >= range.one_past_last)  continue;
+                if (lexeme.str) {
+                    i64 i = pos - token_range.start;
+                    if (lexeme.str[i] != ' ' && lexeme.str[i] != '\n')  continue;
+                }
+                vim_draw_character_pos_circle(app, face_id, buffer_id, text_layout_id, pos, argb);
+            }
+        }
+        
+        if (!token_it_inc_all(&it)) {
+            break;
+        }
+    }
+}
+
+// inline void vim_draw_visual_mode_whitespaces(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer_id, Text_Layout_ID text_layout_id, Token_Array *token_array, ARGB_Color argb) {
+//     if (token_array == 0 || token_array->tokens == 0)  return;
+    
+//     Managed_Scope view_scope = view_get_managed_scope(app, view_id);
+//     if (vim_state.mode != VimMode_Visual && vim_state.mode != VimMode_VisualLine)  return;
+    
+//     // @note draw highlight
+//     Range_i64 range = vim_state.selection_range;
+//     // Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+//     vim_draw_whitespaces_in_range(app, view_id, face_id, buffer_id, text_layout_id, token_array, range, argb);
+// }
+
 function void vim_draw_character_block_selection(Application_Links *app, Buffer_ID buffer, Text_Layout_ID layout, Range_i64 range, f32 roundness, ARGB_Color color, Frame_Info frame_info, i64 cursor_pos) {
     if (range.first < range.one_past_last) {
         i64 i = range.first;
@@ -4994,58 +5347,6 @@ function void vim_draw_character_block_selection(Application_Links *app, Buffer_
         }
 
         Rect_f32 rect = Rf32(x, y);
-
-        if (color == fcolor_resolve(fcolor_id(defcolor_cursor))) {
-
-            Rect_f32 target_rect = text_layout_character_on_screen(app, layout, cursor_pos);
-            Rect_f32 last_rect = rect;
-            
-            // NOTE(Skytrias): counter with delta time
-            f32 size = 10.0f;
-            if (!global_cursor_reached) {
-                if (global_cursor_limit < 1.0f) {
-                    global_cursor_growth_speed = 4.0f;
-                    global_cursor_limit += frame_info.animation_dt * global_cursor_growth_speed;
-                } else {
-                    global_cursor_reached = 1;
-                }
-            } else {
-                if (global_cursor_limit > 0) {
-                    global_cursor_growth_speed = 2.5f;
-                    global_cursor_limit -= frame_info.animation_dt * global_cursor_growth_speed;
-                } else {
-                    global_cursor_reached = 0;
-                }
-            }
-            
-            float x_change = (target_rect.x0 - rect.x0);
-            float y_change = (target_rect.y0 - rect.y0);
-            float cursor_size_x = (target_rect.x1 - target_rect.x0);
-            float cursor_size_y = (target_rect.y1 - target_rect.y0) * (1 + fabsf(y_change) / 60.f);
-            
-            animate_in_n_milliseconds(app, 0);
-            
-            rect.x0 += x_change * frame_info.animation_dt * 14.f;
-            rect.y0 += y_change * frame_info.animation_dt * 14.f;
-            rect.x1 = (rect.x0 + cursor_size_x);
-            rect.y1 = (rect.y0 + cursor_size_y);
-            
-            f32 growth = global_cursor_limit * size / 6.0f;
-            rect.x0 -= growth / 8.0f;
-            rect.x1 += growth * 1.5f;
-            
-            if(target_rect.y0 > last_rect.y0) {
-                if(rect.y0 < last_rect.y0) {
-                    rect.y0 = last_rect.y0;
-                }
-            }
-            else {
-                if(rect.y1 > last_rect.y1) {
-                    rect.y1 = last_rect.y1;
-                }
-            }
-        }
-
         // NOTE: Draw main cursor
         draw_rectangle(app, rect, roundness, color);
     }
@@ -5078,37 +5379,29 @@ function void vim_draw_cursor(Application_Links *app, View_ID view, b32 is_activ
     }
 #endif
 
-    b32 has_highlight_range = draw_highlight_range(app, view, buffer, text_layout_id, roundness);
 
-    if (!has_highlight_range) {
-        i32 cursor_sub_id = default_cursor_sub_id();
-        i64 cursor_pos = view_get_cursor_pos(app, view);
-        i64 mark_pos = view_get_mark_pos(app, view);
-        if (is_active_view) {
-            if (is_vim_insert_mode(mode)) {
-                vim_draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(cursor_color, cursor_sub_id));
-            } else {
-                Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
-                Vim_Visual_Selection selection = vim_get_selection(app, view, buffer);
-                
-                if (selection.kind) {
-                    Range_i64 range = {};
-                    while (vim_selection_consume_line(app, buffer, &selection, &range, true)) {
-                        // @TODO: Even if I limit the drawing to the visible range, this slows 4coder to a crawl if you select a big amount of text...
-                        range = range_intersect(range, visible_range);
-                        vim_draw_character_block_selection(app, buffer, text_layout_id, range, roundness, fcolor_id(defcolor_highlight), frame_info, cursor_pos);
-                        paint_text_color_fcolor(app, text_layout_id, range, fcolor_id(defcolor_at_highlight));
-                    }
-                }
-                
-                vim_draw_character_block_selection(app, buffer, text_layout_id, Ii64(cursor_pos, cursor_pos + 1), roundness, fcolor_id(cursor_color, cursor_sub_id), frame_info, cursor_pos);
-                paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
-            }
-            paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
-            draw_character_wire_frame(app, text_layout_id, mark_pos, roundness, outline_thickness, fcolor_id(defcolor_mark));
+    i32 cursor_sub_id = default_cursor_sub_id();
+    i64 cursor_pos = view_get_cursor_pos(app, view);
+    i64 mark_pos = view_get_mark_pos(app, view);
+    if (is_active_view) {
+        if (is_vim_insert_mode(mode)) {
+            vim_draw_character_i_bar(app, text_layout_id, cursor_pos, fcolor_id(cursor_color, cursor_sub_id));
         } else {
-	        draw_character_wire_frame(app, text_layout_id, cursor_pos, roundness, outline_thickness, fcolor_id(defcolor_cursor));
-            draw_character_wire_frame(app, text_layout_id, cursor_pos, roundness, outline_thickness, fcolor_id(defcolor_cursor));
+            Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+            Vim_Visual_Selection selection = vim_get_selection(app, view, buffer);
+            
+            if (selection.kind) {
+                Range_i64 range = {};
+                while (vim_selection_consume_line(app, buffer, &selection, &range, true)) {
+                    // @TODO: Even if I limit the drawing to the visible range, this slows 4coder to a crawl if you select a big amount of text...
+                    range = range_intersect(range, visible_range);
+                    vim_draw_character_block_selection(app, buffer, text_layout_id, range, roundness, fcolor_id(defcolor_highlight), frame_info, cursor_pos);
+                    paint_text_color_fcolor(app, text_layout_id, range, fcolor_id(defcolor_at_highlight));
+                }
+            }
+            
+            // vim_draw_character_block_selection(app, buffer, text_layout_id, Ii64(cursor_pos, cursor_pos + 1), roundness, fcolor_id(cursor_color, cursor_sub_id), frame_info, cursor_pos);
+            // paint_text_color_pos(app, text_layout_id, cursor_pos, fcolor_id(defcolor_at_cursor));
         }
     }
 }
@@ -5341,7 +5634,7 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     }
     
     i64 cursor_pos = view_correct_cursor(app, view_id);
-    view_correct_mark(app, view_id);
+    i64 mark_pos   = view_correct_mark(app, view_id);
     
     // NOTE(allen): Scope highlight
     if (global_config.use_scope_highlight){
@@ -5430,9 +5723,17 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
         }
     }
 #endif
+
+    // //~ @note Vertical line highlight range
+    // if (is_active_view) {
+    //     ARGB_Color argb_cursor_mark_range = fcolor_resolve(fcolor_id(defcolor_cursor));
+    //     vim_draw_vertical_line_highlight_range(app, view_id, text_layout_id, Ii64(cursor_pos, mark_pos), argb_cursor_mark_range);
+    // }
+
     
     // NOTE(allen): Cursor
     vim_draw_cursor(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, vim_state.mode, frame_info);
+    vim_draw_smooth_cursor_mark(app, view_id, is_active_view, buffer, text_layout_id, cursor_roundness, mark_thickness, frame_info);
     
     // NOTE(allen): Fade ranges
     paint_fade_ranges(app, text_layout_id, buffer);
@@ -5442,6 +5743,13 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     
     {
         penguin_render_close_brace_anotation(app, buffer, text_layout_id, cursor_pos);
+    }
+
+    //~ @NOTE :avy_search
+    {
+        ARGB_Color argb_background = 0xFFFFFF00;
+        ARGB_Color argb_foreground = 0xFF000000;
+        avy_render(app, view_id, buffer, text_layout_id, face_id, rect, cursor_roundness, argb_background, argb_foreground);
     }
     
     {
@@ -5526,6 +5834,9 @@ function void vim_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_
     Managed_Scope scope = buffer_get_managed_scope(app, buffer);
     
     Managed_ID bar_color = defcolor_bar;
+
+    Rect_f32 major = bar;
+    float width = bar.x1 - bar.x0;
     
 #if VIM_USE_CUSTOM_COLORS
     if (vim_state.recording_macro) {
@@ -5559,28 +5870,72 @@ function void vim_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_
     Buffer_Cursor cursor = view_compute_cursor(app, view_id, seek_pos(cursor_position));
     
     Fancy_Line list = {};
+
+    Managed_Scope view_scope = view_get_managed_scope(app, view_id);
+    // @note: Draw major mode
+    if (0) {
+        switch (vim_state.mode) {
+            case VimMode_Normal: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <N>"));
+            } break;
+            case VimMode_Insert: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <I>"));
+            } break;
+            case VimMode_Visual: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <v>"));
+            } break;
+            case VimMode_VisualLine: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <V>"));
+            } break;
+        }
+    }
+    else {
+        switch (vim_state.mode) {
+            case VimMode_Normal: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" NORMAL  "));
+                major.x1 -= (width - 125.f);
+                draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
+            } break;
+            case VimMode_Insert: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" INSERT  "));
+                major.x1 -= (width - 125.f);
+                draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
+            } break;
+            case VimMode_Visual: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" VISUAL  "));
+                major.x1 -= (width - 125.f);
+                draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
+            } break;
+            case VimMode_VisualLine: {
+                push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" VISUAL-LINE  "));
+                major.x1 -= (width - 210.f);
+                draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
+            } break;
+        }
+    }
+
     String_Const_u8 unique_name = push_buffer_unique_name(app, scratch, buffer);
     push_fancy_string(scratch, &list, base_color, unique_name);
-    push_fancy_stringf(scratch, &list, base_color, " - Row: %3.lld Col: %3.lld -", cursor.line, cursor.col);
+    // push_fancy_stringf(scratch, &list, base_color, " - Row: %3.lld Col: %3.lld -", cursor.line, cursor.col);
     
-    Line_Ending_Kind *eol_setting = scope_attachment(app, scope, buffer_eol_setting,
-                                                     Line_Ending_Kind);
-    switch (*eol_setting){
-        case LineEndingKind_Binary:
-        {
-            push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" bin"));
-        }break;
+    // Line_Ending_Kind *eol_setting = scope_attachment(app, scope, buffer_eol_setting,
+    //                                                  Line_Ending_Kind);
+    // switch (*eol_setting){
+    //     case LineEndingKind_Binary:
+    //     {
+    //         push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" bin"));
+    //     }break;
         
-        case LineEndingKind_LF:
-        {
-            push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" lf"));
-        }break;
+    //     case LineEndingKind_LF:
+    //     {
+    //         push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" lf"));
+    //     }break;
         
-        case LineEndingKind_CRLF:
-        {
-            push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" crlf"));
-        }break;
-    }
+    //     case LineEndingKind_CRLF:
+    //     {
+    //         push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" crlf"));
+    //     }break;
+    // }
     
     u8 space[3];
     {
@@ -5598,22 +5953,22 @@ function void vim_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_
         push_fancy_string(scratch, &list, pop2_color, str.string);
     }
     
-    View_ID active_view = get_active_view(app, Access_Always);
-    b32 is_active_view = (active_view == view_id);
+//     View_ID active_view = get_active_view(app, Access_Always);
+//     b32 is_active_view = (active_view == view_id);
     
-    if (is_active_view) {
-#if !VIM_USE_ECHO_BAR
-        if (vim_state.echo_string.size) {
-            push_fancy_string(scratch, &list, vim_state.echo_color, string_u8_litexpr("   << "));
-            push_fancy_string(scratch, &list, vim_state.echo_color, vim_state.echo_string.string);
-            push_fancy_string(scratch, &list, vim_state.echo_color, string_u8_litexpr(" >> "));
-        }
-#endif
-        if (vim_state.recording_macro_register) {
-            push_fancy_stringf(scratch, &list, pop2_color, "   recording @%c", vim_state.recording_macro_register);
-        }
-        push_fancy_stringf(scratch, &list, base_color, "   %.*s", string_expand(vim_state.chord_bar));
-    }
+//     if (is_active_view) {
+// #if !VIM_USE_ECHO_BAR
+//         if (vim_state.echo_string.size) {
+//             push_fancy_string(scratch, &list, vim_state.echo_color, string_u8_litexpr("   << "));
+//             push_fancy_string(scratch, &list, vim_state.echo_color, vim_state.echo_string.string);
+//             push_fancy_string(scratch, &list, vim_state.echo_color, string_u8_litexpr(" >> "));
+//         }
+// #endif
+//         if (vim_state.recording_macro_register) {
+//             push_fancy_stringf(scratch, &list, pop2_color, "   recording @%c", vim_state.recording_macro_register);
+//         }
+//         push_fancy_stringf(scratch, &list, base_color, "   %.*s", string_expand(vim_state.chord_bar));
+//     }
     
     Vec2_f32 p = bar.p0 + V2f32(2.f, 2.f);
     draw_fancy_line(app, face_id, fcolor_zero(), &list, p);
@@ -6362,6 +6717,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimBind(vim_jump_to_definition_under_cursor,                 vim_key(KeyCode_G), vim_key(KeyCode_D));
     VimBind(vim_open_file_in_quotes_in_same_window,              vim_key(KeyCode_G), vim_key(KeyCode_F), vim_key(KeyCode_F));
     VimBind(open_file_in_quotes,                                 vim_key(KeyCode_G), vim_key(KeyCode_F), vim_key(KeyCode_O));
+    VimBind(avy_goto_char,                                       vim_key(KeyCode_G), vim_key(KeyCode_S), vim_key(KeyCode_S));
     
     VimNameBind(string_u8_litexpr("Files"),                      vim_leader, vim_key(KeyCode_B));
     VimBind(interactive_new,                                     vim_leader, vim_key(KeyCode_B), vim_key(KeyCode_N));

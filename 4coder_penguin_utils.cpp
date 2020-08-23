@@ -26,3 +26,22 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 static Face_ID global_styled_title_face = 0;
 static Face_ID global_styled_label_face = 0;
 static Face_ID global_small_code_face = 0;
+
+static Rect_f32 global_cursor_rect = {0};
+static Rect_f32 global_last_cursor_rect = {0};
+static Rect_f32 global_mark_rect = {0};
+static Rect_f32 global_last_mark_rect = {0};
+
+static void penguin_draw_tooltip_rect(Application_Links *app, Rect_f32 rect) {
+    ARGB_Color background_color = fcolor_resolve(fcolor_id(defcolor_back));
+    ARGB_Color border_color = fcolor_resolve(fcolor_id(defcolor_margin_active));
+    
+    background_color &= 0x00ffffff;
+    background_color |= 0xd0000000;
+    
+    border_color &= 0x00ffffff;
+    border_color |= 0xd0000000;
+    
+    draw_rectangle(app, rect, 4.f, background_color);
+    draw_rectangle_outline(app, rect, 4.f, 3.f, border_color);
+}
