@@ -96,6 +96,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #include "4coder_penguin_navigations.cpp"
 #include "4coder_penguin_auto_snippet.cpp"
 #include "4coder_penguin_command.cpp"
+#include "4coder_penguin_draw.cpp"
 #include "4coder_penguin_avy.cpp"
 
 
@@ -5518,8 +5519,8 @@ static void penguin_render_close_brace_anotation(Application_Links *app, Buffer_
         // NOTE(rjf): Draw.
         if(start_token)
 		{
-            //draw_string(app, face_id, string_u8_litexpr("<-"), close_scope_pos, finalize_color(defcolor_comment, 0));
-            //close_scope_pos.x += 32;
+            draw_string(app, face_id, string_u8_litexpr("<-"), close_scope_pos, finalize_color(defcolor_comment, 0));
+            close_scope_pos.x += 32;
             String_Const_u8 start_line = push_buffer_line(app, scratch, buffer,
                                                           get_line_number_from_pos(app, buffer, start_token->pos));
             
@@ -5539,8 +5540,8 @@ static void penguin_render_close_brace_anotation(Application_Links *app, Buffer_
             start_line.size -= first_non_whitespace_offset;
             
             u32 color = finalize_color(defcolor_comment, 0);
-            color &= 0x00ffffff;
-            color |= 0x80000000;
+            // color &= 0x00ffffff;
+            // color |= 0x80000000;
             draw_string(app, face_id, start_line, close_scope_pos, color);
 		}
     }
@@ -5617,7 +5618,8 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     // NOTE(allen): Token colorizing
     Token_Array token_array = get_token_array_from_buffer(app, buffer);
     if (token_array.tokens != 0){
-        draw_cpp_token_colors(app, text_layout_id, &token_array);
+        penguin_draw_tokens(app, buffer, text_layout_id, token_array);
+        // draw_cpp_token_colors(app, text_layout_id, &token_array);
         
         // NOTE(allen): Scan for TODOs and NOTEs
         if (global_config.use_comment_keyword){
@@ -5675,6 +5677,9 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     if (is_active_view) {
         penguin_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
     }
+
+    // NOTE(ryanb): Hex color highlight
+    penguin_draw_hex_color_preview(app, buffer, text_layout_id, cursor_pos);
     
     // NOTE(allen): Line highlight
     if (!is_vim_visual_mode(vim_state.mode) && global_config.highlight_line_at_cursor && is_active_view){
@@ -5758,8 +5763,12 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
 
     draw_set_clip(app, prev_clip);
 
-    if(buffer == dashboard_buffer_id) {
-        draw_dashboard_extras(app, text_layout_id, face_id, rect);
+    // if(buffer == dashboard_buffer_id) {
+    //     draw_dashboard_extras(app, text_layout_id, face_id, rect);
+    // }
+
+    if (show_function_helper && view_id == get_active_view(app, Access_Always)) {
+        penguin_function_helper(app, view_id, buffer, text_layout_id, cursor_pos);
     }
 }
 
@@ -6740,6 +6749,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
     VimNameBind(string_u8_litexpr("Codes"),                      vim_leader, vim_key(KeyCode_C));
     VimBind(snippet_lister,                                      vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_S));
     VimBind(vim_toggle_line_comment_range_indent_style,          vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_Space));
+    VimBind(penguin_toggle_function_helper,                      vim_leader, vim_key(KeyCode_C), vim_key(KeyCode_H));
 
     VimNameBind(string_u8_litexpr("Project"),                    vim_leader, vim_key(KeyCode_P));
     VimBind(project_go_to_root_directory,                        vim_leader, vim_key(KeyCode_P), vim_key(KeyCode_R));
