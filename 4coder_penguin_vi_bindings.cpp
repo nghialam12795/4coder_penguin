@@ -140,7 +140,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #endif
 
 #ifndef VIM_FILE_BAR_ON_BOTTOM
-#define VIM_FILE_BAR_ON_BOTTOM 1
+#define VIM_FILE_BAR_ON_BOTTOM 0
 #endif
 
 #ifndef VIM_DRAW_PANEL_MARGINS
@@ -5121,12 +5121,12 @@ static void vim_do_the_cursor_interpolation(Application_Links *app, Frame_Info f
     float y_change = target.y0 - rect->y0;
     
     float cursor_size_x = (target.x1 - target.x0);
-    float cursor_size_y = (target.y1 - target.y0) * (1 + fabsf(y_change) / 80.f);
+    float cursor_size_y = (target.y1 - target.y0) * (1 + fabsf(y_change) / 70.f);
     
     animate_in_n_milliseconds(app, 0);
     
-    rect->x0 += (x_change) * frame_info.animation_dt * 20.f;
-    rect->y0 += (y_change) * frame_info.animation_dt * 20.f;
+    rect->x0 += (x_change) * frame_info.animation_dt * 30.f;
+    rect->y0 += (y_change) * frame_info.animation_dt * 30.f;
     rect->x1 = rect->x0 + cursor_size_x;
     rect->y1 = rect->y0 + cursor_size_y;
 
@@ -5618,8 +5618,8 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     // NOTE(allen): Token colorizing
     Token_Array token_array = get_token_array_from_buffer(app, buffer);
     if (token_array.tokens != 0){
-        penguin_draw_tokens(app, buffer, text_layout_id, token_array);
-        // draw_cpp_token_colors(app, text_layout_id, &token_array);
+        // penguin_draw_tokens(app, buffer, text_layout_id, token_array);
+        draw_cpp_token_colors(app, text_layout_id, &token_array);
         
         // NOTE(allen): Scan for TODOs and NOTEs
         if (global_config.use_comment_keyword){
@@ -5639,10 +5639,10 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     i64 mark_pos   = view_correct_mark(app, view_id);
     
     // NOTE(allen): Scope highlight
-    if (global_config.use_scope_highlight){
-        Color_Array colors = finalize_color_array(defcolor_back_cycle);
-        draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
-    }
+    // if (global_config.use_scope_highlight){
+    //     Color_Array colors = finalize_color_array(defcolor_back_cycle);
+    //     draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
+    // }
 
     // NOTE(rjf): Brace highlight
     {
@@ -5674,12 +5674,12 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
         draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
     }
 
-    if (is_active_view) {
-        penguin_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
-    }
+    // if (is_active_view) {
+    //     penguin_auto_snippet(app, view_id, buffer, face_id, text_layout_id);
+    // }
 
-    // NOTE(ryanb): Hex color highlight
-    penguin_draw_hex_color_preview(app, buffer, text_layout_id, cursor_pos);
+    // // NOTE(ryanb): Hex color highlight
+    // penguin_draw_hex_color_preview(app, buffer, text_layout_id, cursor_pos);
     
     // NOTE(allen): Line highlight
     if (!is_vim_visual_mode(vim_state.mode) && global_config.highlight_line_at_cursor && is_active_view){
@@ -5767,9 +5767,9 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     //     draw_dashboard_extras(app, text_layout_id, face_id, rect);
     // }
 
-    if (show_function_helper && view_id == get_active_view(app, Access_Always)) {
-        penguin_function_helper(app, view_id, buffer, text_layout_id, cursor_pos);
-    }
+    // if (show_function_helper && view_id == get_active_view(app, Access_Always)) {
+    //     penguin_function_helper(app, view_id, buffer, text_layout_id, cursor_pos);
+    // }
 }
 
 function void vim_draw_echo_bar(Application_Links *app, Face_ID face_id, Rect_f32 bar) {

@@ -90,14 +90,16 @@ CUSTOM_DOC("Penguin startup event") {
     User_Input input = get_current_input(app);
     if(match_core_code(&input, CoreCode_Startup)) {
         String_Const_u8_Array file_names = input.event.core.file_names;
-        system_set_fullscreen(true);
         load_themes_default_folder(app);
         default_4coder_initialize(app, file_names);
         default_4coder_side_by_side_panels(app, file_names);
 
         if (global_config.automatically_load_project) {
+            set_hot_directory(app, string_u8_litexpr("/Users/nghialam/Projects/Ethan/"));
             load_project(app);
         }
+
+        // system_set_fullscreen(true);
 
         // NOTE: Open Dashboard
         // dashboard_open(app);
