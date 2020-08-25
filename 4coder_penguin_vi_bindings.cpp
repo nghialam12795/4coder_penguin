@@ -5618,8 +5618,8 @@ function void vim_render_buffer(Application_Links *app, View_ID view_id, Face_ID
     // NOTE(allen): Token colorizing
     Token_Array token_array = get_token_array_from_buffer(app, buffer);
     if (token_array.tokens != 0){
-        // penguin_draw_tokens(app, buffer, text_layout_id, token_array);
-        draw_cpp_token_colors(app, text_layout_id, &token_array);
+        penguin_draw_tokens(app, buffer, text_layout_id, token_array);
+        // draw_cpp_token_colors(app, text_layout_id, &token_array);
         
         // NOTE(allen): Scan for TODOs and NOTEs
         if (global_config.use_comment_keyword){

@@ -95,8 +95,7 @@ CUSTOM_DOC("Penguin startup event") {
         default_4coder_side_by_side_panels(app, file_names);
 
         if (global_config.automatically_load_project) {
-            set_hot_directory(app, string_u8_litexpr("/Users/nghialam/Projects/Ethan/"));
-            load_project(app);
+            projects_lister(app);
         }
 
         // system_set_fullscreen(true);

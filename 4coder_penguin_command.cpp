@@ -328,3 +328,38 @@ function FColor penguin_get_token_color_cpp(Token token) {
 CUSTOM_COMMAND_SIG(penguin_toggle_function_helper) {
     show_function_helper = !show_function_helper;
 }
+
+CUSTOM_UI_COMMAND_SIG(projects_lister)
+CUSTOM_DOC("List of all your projects")
+{
+	Scratch_Block scratch(app);
+    char *query = "Load your project:";
+
+    Lister_Block lister(app, scratch);
+    lister_set_query(lister, query);
+    Lister_Handlers handlers = lister_get_default_handlers();
+    lister_set_handlers(lister, &handlers);
+
+	// Here are the hardcoded paths that you should change depending on your projects
+	String_Const_u8 project1 = string_u8_litexpr("/Users/nghialam/Projects/Ethan/");
+	String_Const_u8 project2 = string_u8_litexpr("/Applications/4coder.app/Contents/MacOS/");
+
+	code_index_lock();
+
+	// Here are the names you want to give to each of your projects (optional)
+
+	lister_add_item(lister, project1, string_u8_litexpr("Ethan"), &project1, 0);
+	lister_add_item(lister, project2, string_u8_litexpr("4Coder"), &project2, 0);
+	code_index_unlock();
+
+	Lister_Result l_result = run_lister(app, lister);
+	String_Const_u8 *result = 0;
+    if (!l_result.canceled && l_result.user_data != 0){
+		result = (String_Const_u8 *)l_result.user_data;
+		if (result->str != 0){
+			set_hot_directory(app, *result);
+			close_all_files(app);
+			load_project(app);
+		}
+	}
+}
