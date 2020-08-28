@@ -13,6 +13,136 @@ static void penguin_draw_tooltip_rect(Application_Links *app, Rect_f32 rect) {
     draw_rectangle_outline(app, rect, 4.f, 3.f, border_color);
 }
 
+static void penguin_pushtooltip(String_Const_u8 string, ARGB_Color color) {
+  if(global_tooltip_count < ArrayCount(global_tooltips)) {
+    String_Const_u8 string_copy = push_string_copy(&global_frame_arena, string);
+    global_tooltips[global_tooltip_count].color = color;
+    global_tooltips[global_tooltip_count].string = string_copy;
+    global_tooltip_count += 1;
+  }
+}
+
+//~ NOTE(rjf): Error annotations
+
+static void penguin_render_error_annotation(Application_Links *app, Buffer_ID buffer,
+                          Text_Layout_ID text_layout_id,
+                          Buffer_ID jump_buffer) {
+  ProfileScope(app, "[Fleury] Error Annotations");
+  
+  Heap *heap = &global_heap;
+  Scratch_Block scratch(app);
+  
+  Locked_Jump_State jump_state = {};
+  {
+    ProfileScope(app, "[Fleury] Error Annotations (Get Locked Jump State)");
+    jump_state = get_locked_jump_state(app, heap);
+  }
+  
+  Face_ID face = global_small_code_face;
+  Face_Metrics metrics = get_face_metrics(app, face);
+  
+  if(jump_buffer != 0 && jump_state.view != 0)
+  {
+    Managed_Scope buffer_scopes[2];
+    {
+      ProfileScope(app, "[Fleury] Error Annotations (Buffer Get Managed Scope)");
+      buffer_scopes[0] = buffer_get_managed_scope(app, jump_buffer);
+      buffer_scopes[1] = buffer_get_managed_scope(app, buffer);
+    }
+    
+    Managed_Scope comp_scope = 0;
+    {
+      ProfileScope(app, "[Fleury] Error Annotations (Get Managed Scope)");
+      comp_scope = get_managed_scope_with_multiple_dependencies(app, buffer_scopes, ArrayCount(buffer_scopes));
+    }
+    
+    Managed_Object *buffer_markers_object = 0;
+    {
+      ProfileScope(app, "[Fleury] Error Annotations (Scope Attachment)");
+      buffer_markers_object = scope_attachment(app, comp_scope, sticky_jump_marker_handle, Managed_Object);
+    }
+    
+    // NOTE(rjf): Get buffer markers (locations where jumps point at).
+    i32 buffer_marker_count = 0;
+    Marker *buffer_markers = 0;
+    {
+      ProfileScope(app, "[Fleury] Error Annotations (Load Managed Object Data)");
+      buffer_marker_count = managed_object_get_item_count(app, *buffer_markers_object);
+      buffer_markers = push_array(scratch, Marker, buffer_marker_count);
+      managed_object_load_data(app, *buffer_markers_object, 0, buffer_marker_count, buffer_markers);
+    }
+    
+    i64 last_line = -1;
+    
+    for(i32 i = 0; i < buffer_marker_count; i += 1)
+    {
+      ProfileScope(app, "[Fleury] Error Annotations (Buffer Loop)");
+      
+      i64 jump_line_number = get_line_from_list(app, jump_state.list, i);
+      i64 code_line_number = get_line_number_from_pos(app, buffer, buffer_markers[i].pos);
+      
+      if(code_line_number != last_line)
+      {
+        ProfileScope(app, "[Fleury] Error Annotations (Jump Line)");
+        
+        String_Const_u8 jump_line = push_buffer_line(app, scratch, jump_buffer, jump_line_number);
+        
+        // NOTE(rjf): Remove file part of jump line.
+        {
+          u64 index = string_find_first(jump_line, string_u8_litexpr("error"), StringMatch_CaseInsensitive);
+          if(index == jump_line.size)
+          {
+            index = string_find_first(jump_line, string_u8_litexpr("warning"), StringMatch_CaseInsensitive);
+            if(index == jump_line.size)
+            {
+              index = 0;
+            }
+          }
+          jump_line.str += index;
+          jump_line.size -= index;
+        }
+        
+        // NOTE(rjf): Render annotation.
+        {
+          Range_i64 line_range = Ii64(code_line_number);
+          Range_f32 y1 = text_layout_line_on_screen(app, text_layout_id, line_range.min);
+          Range_f32 y2 = text_layout_line_on_screen(app, text_layout_id, line_range.max);
+          Range_f32 y = range_union(y1, y2);
+          Rect_f32 last_character_on_line_rect =
+            text_layout_character_on_screen(app, text_layout_id, get_line_end_pos(app, buffer, code_line_number)-1);
+          
+          if(range_size(y) > 0.f)
+          {
+            Rect_f32 region = text_layout_region(app, text_layout_id);
+            Vec2_f32 draw_position =
+            {
+              region.x1 - metrics.max_advance*jump_line.size -
+                (y.max-y.min)/2 - metrics.line_height/2,
+              y.min + (y.max-y.min)/2 - metrics.line_height/2,
+            };
+            
+            if(draw_position.x < last_character_on_line_rect.x1 + 30)
+            {
+              draw_position.x = last_character_on_line_rect.x1 + 30;
+            }
+            
+            draw_string(app, face, jump_line, draw_position, 0xffff0000);
+            
+            Mouse_State mouse_state = get_mouse_state(app);
+            if(mouse_state.x >= region.x0 && mouse_state.x <= region.x1 &&
+               mouse_state.y >= y.min && mouse_state.y <= y.max)
+            {
+              penguin_pushtooltip(jump_line, 0xffff0000);
+            }
+          }
+        }
+      }
+      
+      last_line = code_line_number;
+    }
+  }
+}
+
 static void penguin_function_helper(Application_Links* app, View_ID view, Buffer_ID buffer, Text_Layout_ID text_layout_id, i64 pos) {
     ProfileScope(app, "[Penguin] function helper");
     
@@ -324,6 +454,127 @@ function FColor penguin_get_token_color_cpp(Token token) {
     return (result);
 }
 
+// Credit to Ryan Fleury
+// https://github.com/ryanfleury/4coder_fleury/blob/master/4coder_fleury_divider_comments.cpp
+
+//~ NOTE(rjf): Divider Comments
+
+static void penguin_render_divider_comment(Application_Links *app, Buffer_ID buffer, View_ID view, Text_Layout_ID text_layout_id)
+{
+  ProfileScope(app, "[Fleury] Divider Comments");
+  
+  String_Const_u8 divider_comment_signifier = string_u8_litexpr("//~");
+  
+  Token_Array token_array = get_token_array_from_buffer(app, buffer);
+  Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+  Scratch_Block scratch(app);
+  
+  if(token_array.tokens != 0)
+  {
+    i64 first_index = token_index_from_pos(&token_array, visible_range.first);
+    Token_Iterator_Array it = token_iterator_index(0, &token_array, first_index);
+    
+    Token *token = 0;
+    for(;;)
+    {
+      token = token_it_read(&it);
+      
+      if(token->pos >= visible_range.one_past_last || !token || !token_it_inc_non_whitespace(&it))
+      {
+        break;
+      }
+      
+      if(token->kind == TokenBaseKind_Comment)
+      {
+        Rect_f32 comment_first_char_rect =
+          text_layout_character_on_screen(app, text_layout_id, token->pos);
+        
+        Range_i64 token_range =
+        {
+          token->pos,
+          token->pos + (token->size > (i64)divider_comment_signifier.size
+                        ? (i64)divider_comment_signifier.size
+                        : token->size),
+        };
+        
+        u8 token_buffer[256] = {0};
+        buffer_read_range(app, buffer, token_range, token_buffer);
+        String_Const_u8 token_string = { token_buffer, (u64)(token_range.end - token_range.start) };
+        
+        if(string_match(token_string, divider_comment_signifier))
+        {
+          // NOTE(rjf): Render divider line.
+          Rect_f32 rect =
+          {
+            comment_first_char_rect.x0,
+            comment_first_char_rect.y0-2,
+            10000,
+            comment_first_char_rect.y0,
+          };
+          f32 roundness = 4.f;
+          draw_rectangle(app, rect, roundness, fcolor_resolve(fcolor_id(defcolor_comment)));
+        }
+      }
+    }
+  }
+}
+
+// Credit to Skytrias
+// https://github.com/Skytrias/4files/blob/e254e55d9c310eeaa7f77d6a377ba517d6c1f055/render_highlight.cpp#L462
+
+function void penguin_paint_functions(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id) {
+  i64 keyword_length = 0;
+  i64 start_pos = 0;
+  i64 end_pos = 0;
+  
+	Token_Array array = get_token_array_from_buffer(app, buffer);
+  if (array.tokens != 0){
+    Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+    i64 first_index = token_index_from_pos(&array, visible_range.first);
+    Token_Iterator_Array it = token_iterator_index(0, &array, first_index);
+    for (;;){
+      Token *token = token_it_read(&it);
+      if (token->pos >= visible_range.one_past_last){
+        break;
+      }
+      
+      // get pos at paren
+      // NOTE(Skytrias): use token->sub_kind == TokenCppKind_ParenOp if only '(' should be used
+			if (keyword_length != 0 && token->kind == TokenBaseKind_ParentheticalOpen) {
+        end_pos = token->pos;
+      }
+      
+      // search for default text, count up the size
+      if (token->kind == TokenBaseKind_Identifier) {
+        if (keyword_length == 0) {
+          start_pos = token->pos;
+        }
+        
+        keyword_length += 1;
+      } else {
+        keyword_length = 0;
+      }
+      
+      // color text
+      if (start_pos != 0 && end_pos != 0) {
+        Range_i64 range = { 0 };
+        range.start = start_pos;
+        range.end = end_pos;
+        
+				// NOTE(Skytrias): use your own colorscheme her via fcolor_id(defcolor_*)
+				// NOTE(Skytrias): or set the color you'd like to use globally like i do
+        paint_text_color(app, text_layout_id, range, fcolor_resolve(fcolor_id(defcolor_special_character)));
+        
+        end_pos = 0;
+        start_pos = 0;
+      }
+      
+      if (!token_it_inc_all(&it)){
+        break;
+      }
+    }
+  }
+}
 
 CUSTOM_COMMAND_SIG(penguin_toggle_function_helper) {
     show_function_helper = !show_function_helper;

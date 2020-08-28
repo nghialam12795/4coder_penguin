@@ -23,6 +23,16 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+typedef struct _MemoryArena _MemoryArena;
+struct _MemoryArena
+{
+  void *buffer;
+  u32 buffer_size;
+  u32 alloc_position;
+  u32 bytes_left;
+};
+
+
 static Face_ID global_styled_title_face = 0;
 static Face_ID global_styled_label_face = 0;
 static Face_ID global_small_code_face = 0;
@@ -31,6 +41,16 @@ static Rect_f32 global_cursor_rect = {0};
 static Rect_f32 global_last_cursor_rect = {0};
 static Rect_f32 global_mark_rect = {0};
 static Rect_f32 global_last_mark_rect = {0};
+
+static struct
+{
+  String_Const_u8 string;
+  ARGB_Color color;
+}
+global_tooltips[32] = {0};
+static int global_tooltip_count = 0;
+static _MemoryArena _global_frame_arena = {0};
+static Arena global_frame_arena;
 
 /////////////////////////////////////////////////////////////////////////////
 // STATE                                                                   //
@@ -41,5 +61,5 @@ namespace {
     // f32 auto_bookmark_time_remaining = bookmark_auto_seconds;
     // i64 bookmark_cursor = 0;
     
-    b32 show_function_helper = false;
+    b32 show_function_helper = true;
 }
