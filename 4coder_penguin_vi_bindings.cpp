@@ -149,7 +149,7 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #endif
 
 #ifndef VIM_PANEL_MARGIN_THICKNESS
-#define VIM_PANEL_MARGIN_THICKNESS 2.5f
+#define VIM_PANEL_MARGIN_THICKNESS 3.5f
 #endif
 
 #ifndef VIM_USE_ECHO_BAR
@@ -6100,8 +6100,12 @@ function void vim_render_caller(Application_Links *app, Frame_Info frame_info, V
   Text_Layout_ID text_layout_id = text_layout_create(app, buffer, region, buffer_point);
   
   // NOTE(allen): draw line numbers
-  if (global_config.show_line_number_margins){
-    draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
+  if(global_config.show_line_number_margins) {
+    if(use_relative_line_number_mode) {
+      draw_relative_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
+    } else {
+      draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
+    }
   }
   
   // NOTE(allen): draw the buffer
@@ -6569,6 +6573,7 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
   Bind(if_read_only_goto_position_same_panel,       KeyCode_Return, KeyCode_Shift);
   Bind(view_jump_list_with_lister,                  KeyCode_Period, KeyCode_Control, KeyCode_Shift);
   Bind(vim_enter_normal_mode_escape,                KeyCode_Escape);
+  Bind(vim_enter_normal_mode_escape,                KeyCode_J, KeyCode_K);
   
   // Code Map
   
@@ -6741,6 +6746,8 @@ function void vim_setup_default_mapping(Application_Links* app, Mapping *mapping
   VimBind(windmove_panel_swap_right,                           vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_L, KeyCode_Shift));
   VimBind(vim_split_window_vertical,                           vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_V));
   VimBind(vim_split_window_horizontal,                         vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_S));
+  VimBind(toggle_expand_panel,                                 vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_M));
+  VimBind(even_panel,                                          vim_leader, vim_key(KeyCode_W), vim_key(KeyCode_E));
   
   VimBind(center_view,                                         vim_key(KeyCode_Z), vim_key(KeyCode_Z));
   VimBind(vim_view_move_line_to_top,                           vim_key(KeyCode_Z), vim_key(KeyCode_T));
