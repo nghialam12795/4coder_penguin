@@ -669,37 +669,80 @@ CUSTOM_DOC("Make All Windows Even")
   global_is_expand_panel = false;
 }
 
+// NOTE(Nghia Lam): Format:
+// <Project_Name>
+// <Project_Path>
+// ...
+// ---------------------- END <- Important
 CUSTOM_UI_COMMAND_SIG(projects_lister)
-CUSTOM_DOC("List of all your projects")
+CUSTOM_DOC("List current projects and jump and load to one chosen by the user.")
 {
-	Scratch_Block scratch(app);
-    char *query = "Load your project:";
-
+  Scratch_Block scratch(app);
+  
+  // NOTE(dgl): We currently support up to 20 projects;
+  String_Const_u8 Projects[20];
+  uint8_t ProjectCount = 0;
+  b32 success = false;
+  FILE *FileHandle = open_file_try_current_path_then_binary_path(app, "projects.4coder");
+  if (FileHandle != 0)
+  {
+    Data FileContent = dump_file_handle(scratch, FileHandle);
+    fclose(FileHandle);
+    if (FileContent.data != 0)
+    {
+      String_Const_u8 *LatestProject = &Projects[ProjectCount++];
+      u8 *Source = FileContent.data;
+      LatestProject->str = FileContent.data;
+      while(Source < (FileContent.data + FileContent.size))
+      {
+        if(*Source == '\n' && ProjectCount <= ArrayCount(Projects))
+        {
+          LatestProject->size = Source - LatestProject->str;
+          // NOTE(dgl): Switch to new project string
+          Source++;
+          LatestProject = &Projects[ProjectCount++];
+          LatestProject->str = Source;
+        }
+        else
+        {
+          Source++;
+        }
+      }
+      success = true;
+    }
+  }
+  
+  // TODO(dgl): Remove empty strings
+  ProjectCount--;
+  
+  if (success){
+    char *query = "Project:";
+    
     Lister_Block lister(app, scratch);
     lister_set_query(lister, query);
-    Lister_Handlers handlers = lister_get_default_handlers();
-    lister_set_handlers(lister, &handlers);
-
-	// Here are the hardcoded paths that you should change depending on your projects
-	String_Const_u8 project1 = string_u8_litexpr("/Users/nghialam/Projects/Ethan/");
-	String_Const_u8 project2 = string_u8_litexpr("/Applications/4coder.app/Contents/MacOS/");
-
-	code_index_lock();
-
-	// Here are the names you want to give to each of your projects (optional)
-
-	lister_add_item(lister, project1, string_u8_litexpr("Ethan"), &project1, 0);
-	lister_add_item(lister, project2, string_u8_litexpr("4Coder"), &project2, 0);
-	code_index_unlock();
-
-	Lister_Result l_result = run_lister(app, lister);
-	String_Const_u8 *result = 0;
-    if (!l_result.canceled && l_result.user_data != 0){
-		result = (String_Const_u8 *)l_result.user_data;
-		if (result->str != 0){
-			set_hot_directory(app, *result);
-			close_all_files(app);
-			load_project(app);
-		}
-	}
+    lister_set_default_handlers(lister);
+    
+    code_index_lock();
+    
+    for(int Index = 0; Index < ProjectCount; Index+=2)
+    {
+      String_Const_u8 Name = Projects[Index];
+      lister_add_item(lister, Projects[Index + 1], Name, &Projects[Index + 1], 0);
+    }
+    
+    code_index_unlock();
+    
+    Lister_Result l_result = run_lister(app, lister);
+    String_Const_u8 *result = 0;
+    
+    if(!l_result.canceled && l_result.user_data != 0)
+    {
+      result = (String_Const_u8 *)l_result.user_data;
+      if (result->str != 0){
+        set_hot_directory(app, *result);
+        close_all_files(app);
+        load_project(app);
+      }
+    }
+  }
 }
