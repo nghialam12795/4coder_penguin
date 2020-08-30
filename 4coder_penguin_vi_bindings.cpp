@@ -5884,32 +5884,9 @@ function void vim_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_
   Rect_f32 major = bar;
   float width = bar.x1 - bar.x0;
   
-#if VIM_USE_CUSTOM_COLORS
-  if (vim_state.recording_macro) {
-    bar_color = defcolor_vim_bar_recording_macro;
-  } else {
-    switch (vim_state.mode) {
-      case VimMode_Normal: {
-        bar_color = defcolor_vim_bar_normal;
-      } break;
-      
-      case VimMode_VisualInsert:
-      case VimMode_Insert: {
-        bar_color = defcolor_vim_bar_insert;
-      } break;
-      
-      case VimMode_Visual:
-      case VimMode_VisualLine:
-      case VimMode_VisualBlock: {
-        bar_color = defcolor_vim_bar_visual;
-      } break;
-    }
-  }
-#endif
-  
   draw_rectangle(app, bar, 0.f, fcolor_resolve(fcolor_id(bar_color)));
   
-  FColor base_color = fcolor_id(defcolor_base);
+  FColor base_color = fcolor_id(defcolor_comment);
   FColor pop2_color = fcolor_id(defcolor_pop2);
   
   i64 cursor_position = view_get_cursor_pos(app, view_id);
@@ -5918,55 +5895,15 @@ function void vim_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_
   Fancy_Line list = {};
   
   Managed_Scope view_scope = view_get_managed_scope(app, view_id);
-  // @note: Draw major mode
-  if (0) {
-    switch (vim_state.mode) {
-      case VimMode_Normal: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <N>"));
-      } break;
-      case VimMode_Insert: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <I>"));
-      } break;
-      case VimMode_Visual: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <v>"));
-      } break;
-      case VimMode_VisualLine: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" <V>"));
-      } break;
-    }
-  }
-  else {
-    switch (vim_state.mode) {
-      case VimMode_Normal: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" NORMAL  "));
-        major.x1 -= (width - 125.f);
-        draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
-      } break;
-      case VimMode_Insert: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" INSERT  "));
-        major.x1 -= (width - 125.f);
-        draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
-      } break;
-      case VimMode_Visual: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" VISUAL  "));
-        major.x1 -= (width - 125.f);
-        draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
-      } break;
-      case VimMode_VisualLine: {
-        push_fancy_string(scratch, &list, base_color, string_u8_litexpr(" VISUAL-LINE  "));
-        major.x1 -= (width - 210.f);
-        draw_rectangle(app, major, 0.f, fcolor_resolve(fcolor_id(0xFFFFFFAA)));
-      } break;
-    }
-  }
+  
+  String_Const_u8 unique_name = push_buffer_unique_name(app, scratch, buffer);
+  push_fancy_string(scratch, &list, pop2_color, unique_name);
   
   time_t now = time(0);
   tm *ltm = localtime(&now); 
   
-  push_fancy_stringf(scratch, &list, base_color, "|Time %1.lld:%1.lld| ", ltm->tm_hour, ltm->tm_min);
+  push_fancy_stringf(scratch, &list, pop2_color, "  -  |Time %1.lld:%1.lld| ", ltm->tm_hour, ltm->tm_min);
   
-  String_Const_u8 unique_name = push_buffer_unique_name(app, scratch, buffer);
-  push_fancy_string(scratch, &list, base_color, unique_name);
   // push_fancy_stringf(scratch, &list, base_color, " - Row: %3.lld Col: %3.lld -", cursor.line, cursor.col);
   
   // Line_Ending_Kind *eol_setting = scope_attachment(app, scope, buffer_eol_setting,
