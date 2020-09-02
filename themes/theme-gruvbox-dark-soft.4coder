@@ -1,0 +1,118 @@
+// 4Coder version by: sammynilla
+
+	/* COLORS */
+bg	   = 0xFF282828;
+bg0_s    = 0xFF32302F;
+bg1	  = 0xFF3C3836;
+bg2	  = 0xFF504945;
+bg3	  = 0xFF665C54;
+bg4	  = 0xFF7C6F64;
+fg1	  = 0xFFEBDBB2;
+fg2      = 0xFFD5C4A1;
+fg3      = 0xFFBDAE93;
+fg4	  = 0xFFA89984;
+red	  = 0xFFFB4934;
+red_hc   = 0xFFCC241D;
+green	= 0xFFB8BB26;
+green_hc = 0xFF98971A;
+yellow   = 0xFFFABD2F;
+yellow_hc= 0xFFD79921;
+blue	 = 0xFF83A598;
+blue_hc  = 0xFF458588;
+purple   = 0xFFD3869B;
+purple_hc= 0xFFB16286;
+aqua	 = 0xFF8EC07C;
+aqua_hc  = 0xFF689D6A;
+orange   = 0xFFFE8019;
+orange_hc= 0xFFD65D0E;
+gray	 = 0xFFA89984;
+gray2	= 0xFF928374;
+
+	/* Backcolor */
+defcolor_back = bg;
+
+	/* Margins */
+defcolor_margin = defcolor_back;
+defcolor_margin_hover = bg1;
+defcolor_margin_active = bg0_s;
+
+	/* Listers */
+defcolor_list_item = defcolor_back;
+defcolor_list_item_hover = defcolor_margin_active;
+defcolor_list_item_active = defcolor_margin_hover;
+
+	/* Cursor and Mark */
+defcolor_cursor = gray2;
+defcolor_at_cursor = bg1;
+defcolor_mark = defcolor_cursor;
+
+	/* Line and Selection Highlights */
+defcolor_highlight_cursor_line = defcolor_at_cursor;
+defcolor_highlight = {
+	defcolor_cursor, // search highlight
+	fg2,			 // c/c++ function name highlighting
+};
+defcolor_at_highlight = defcolor_back; // text inside of highlight
+
+	/* Syntax Highlighting */
+defcolor_text_default = fg2;
+defcolor_comment = bg4;
+defcolor_comment_pop = { aqua_hc, red_hc, purple_hc, };
+defcolor_keyword = { yellow, red, orange };
+defcolor_str_constant = green;
+defcolor_char_constant = defcolor_str_constant;
+defcolor_int_constant = purple;
+defcolor_float_constant = defcolor_int_constant;
+defcolor_bool_constant = defcolor_int_constant;
+defcolor_include = defcolor_str_constant;
+defcolor_preproc = { aqua, aqua };
+defcolor_special_character = defcolor_int_constant;	// ??
+defcolor_ghost_character = defcolor_char_constant;	 // ??
+
+	/* Faint color transitions */
+defcolor_paste = defcolor_ghost_character;
+defcolor_undo = defcolor_keyword;
+
+	/* Error/Jump highlighting */
+defcolor_highlight_junk = red_hc;
+defcolor_highlight_white = bg2;
+
+	/* Bar */
+defcolor_bar = {
+	bg1,		// file/buffer name
+	bg2,		// eof
+	fg4,		// line number,
+	red,		// macro recording
+	orange_hc,  // buffer
+	blue,	   // query?
+};
+defcolor_base = {
+	fg4,	// main text
+	bg,	 // dark text
+};
+
+	/* Descriptive Text */
+defcolor_pop1 = blue_hc; // Action keys (alt+o for example)
+defcolor_pop2 = red_hc;  // Loaded text or description text
+
+	/* Scope Highlighting. */
+defcolor_back_cycle = {
+	defcolor_back,
+	defcolor_back,
+	defcolor_back,
+	defcolor_back
+};
+	/* Scope Parenthesis Highlighting  */
+defcolor_text_cycle = {
+	defcolor_text_default,
+	defcolor_text_default,
+	defcolor_text_default,
+	defcolor_text_default
+};
+
+	/* Line Numbers */
+defcolor_line_numbers_back = defcolor_back;
+defcolor_line_numbers_text = {
+	defcolor_comment,	// base color
+	yellow,			  // highlighted color
+};

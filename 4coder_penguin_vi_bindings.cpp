@@ -144,11 +144,11 @@ License: GNU GENERAL PUBLIC LICENSE Version 3
 #endif
 
 #ifndef VIM_DRAW_PANEL_MARGINS
-#define VIM_DRAW_PANEL_MARGINS 0 // 0: don't draw, 1: minimal vertical margins, 2: full margins
+#define VIM_DRAW_PANEL_MARGINS 2 // 0: don't draw, 1: minimal vertical margins, 2: full margins
 #endif
 
 #ifndef VIM_PANEL_MARGIN_THICKNESS
-#define VIM_PANEL_MARGIN_THICKNESS 1.5f
+#define VIM_PANEL_MARGIN_THICKNESS 2.0f
 #endif
 
 #ifndef VIM_USE_ECHO_BAR
@@ -5876,23 +5876,22 @@ function Rect_f32 vim_draw_background_and_margin(Application_Links *app, View_ID
 //|
 // Draw Filebar
 
-internal f32 DrawFileBarTriangles(Application_Links * App, Rect_f32 Bar, FColor FillColor, f32 StartPoint, i32 Iter)
-{
- Rect_f32 LineRect = {};
- local_const i32 LineCount = 15;
- i32 Index = 0;
- do
- {
-  LineRect.x0 = (StartPoint + Index);
-  LineRect.x1 = LineRect.x0 + Iter;
-  LineRect.y0 = Bar.y0 + (Index * Iter);
-  LineRect.y1 = (Bar.y1 - (Index * Iter)) - 3;
+internal f32 DrawFileBarTriangles(Application_Links * App, Rect_f32 Bar, FColor FillColor, f32 StartPoint, i32 Iter) {
+  Rect_f32 LineRect = {};
+  local_const i32 LineCount = 15;
+  i32 Index = 0;
+  do {
+    LineRect.x0 = (StartPoint + Index);
+    LineRect.x1 = LineRect.x0 + Iter;
+    LineRect.y0 = Bar.y0 + (Index * Iter);
+    LineRect.y1 = (Bar.y1 - (Index * Iter)) - 3;
+    
+    // NOTE(Nghia Lam): Uncomment for drawing
+    // draw_rectangle_fcolor(App, LineRect, 0, FillColor);
+    Index += Iter;
+  } while (((LineCount * Iter) + (-Index)));
   
-  draw_rectangle_fcolor(App, LineRect, 0, FillColor);
-  Index += Iter;
- } while (((LineCount * Iter) + (-Index)));
- 
- return Iter ? LineRect.x1 : LineRect.x0;
+  return Iter ? LineRect.x1 : LineRect.x0;
 }
 
 internal f32 DrawFileBarMode(Application_Links * App, Face_ID FaceID, Rect_f32 Bar, String_Const_u8 BufferName, b32 IsBuffer, f32 DigitAdvance)
@@ -6041,10 +6040,6 @@ internal void DrawFileBarBufferInfo(Application_Links * App, View_ID ViewID, Buf
 function void vim_draw_file_bar(Application_Links *app, View_ID view_id, Buffer_ID buffer, Face_ID face_id, Rect_f32 bar) {
  Scratch_Block scratch(app);
  
- // time_t now = time(0);
- // tm *ltm = localtime(&now); 
- 
- // push_fancy_stringf(scratch, &list, pop2_color, "  -  |Time %1.lld:%1.lld| ", ltm->tm_hour, ltm->tm_min);
  
  FColor BaseMainColor = fcolor_id(defcolor_base);
  FColor BaseDarkColor = fcolor_argb(finalize_color(defcolor_base, 1));
