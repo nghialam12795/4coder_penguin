@@ -36,6 +36,7 @@ struct _MemoryArena
 static Face_ID global_styled_title_face = 0;
 static Face_ID global_styled_label_face = 0;
 static Face_ID global_small_code_face = 0;
+static b32 global_battery_saver = 0;
 
 static Rect_f32 global_cursor_rect = {0};
 static Rect_f32 global_last_cursor_rect = {0};
