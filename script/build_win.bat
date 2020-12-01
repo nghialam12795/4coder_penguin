@@ -22,5 +22,5 @@
 ::    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 @echo off
-call bin\buildsuper_x64-win.bat 4coder_penguin\4coder_penguin.cpp
+call bin\buildsuper_x64-win.bat 4coder_nghialam\4coder_nghialam.cpp
 copy custom_4coder.dll ..\custom_4coder.dll
