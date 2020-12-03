@@ -22,3 +22,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==========================================================================
+
+#if !defined(FCODER_NGHIALAM_BASE)
+#define FCODER_NGHIALAM_BASE
+
+//~ NOTE(Nghia Lam): Global Settings
+global b32 global_dark_mode     = true;
+global b32 global_battery_saver = false;
+global b32 global_filebar_top   = true;
+
+#endif // FCODER_NGHIALAM_BASE

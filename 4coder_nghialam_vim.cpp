@@ -23,3 +23,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==========================================================================
 
+#if !defined(FCODER_NGHIALAM_VIM)
+#define FCODER_NGHIALAM_VIM
+
+#endif // FCODER_NGHIALAM_VIM

@@ -23,37 +23,30 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==========================================================================
 
-// NOTE(Nghia Lam): The order of included files does matter when building
-#include "4coder_default_include.cpp"
-#include "generated/managed_id_metadata.cpp"
+#if !defined(FCODER_NGHIALAM_COMMANDS)
+#define FCODER_NGHIALAM_COMMAND
 
-#include "4coder_nghialam/4coder_nghialam_base.cpp"
-#include "4coder_nghialam/4coder_nghialam_draw.cpp"
-#include "4coder_nghialam/4coder_nghialam_hook.cpp"
-#include "4coder_nghialam/4coder_nghialam_commands.cpp"
+//~ NOTE(Nghia Lam): Main APIs
+CUSTOM_COMMAND_SIG(nghialam_startup);             // Custom layer startup
+CUSTOM_COMMAND_SIG(toggle_battery_saver);         // Change between batter saver mode <-> normal mode
+CUSTOM_COMMAND_SIG(toggle_filebar_position);      // Change filebar on top <-> bottom position
 
-//~ TODO(Nghia Lam): Create my custom layer
-//  - [ ] VI Model Editing System ?? 
-//  - [ ] Plot comment system
-//  - [ ] Stuff for rendering
-//  - [ ] My own file bar rendering
-//  - [ ] Project management
-//  - [ ] Project todo list
-
-//~ NOTE(Nghia Lam): Entry Point here
-void custom_layer_init(Application_Links *app) {
-  Thread_Context *tctx = get_thread_context(app);
+//~ NOTE(Nghia Lam): My Implementation
+CUSTOM_COMMAND_SIG(nghialam_startup)
+CUSTOM_DOC("NghiaLam's custom layer startup event") {
+  ProfileScope(app, "default startup");
   
-  // NOTE(Allen): Setup for default framework
-  default_framework_init(app);
-  
-  // NOTE(Nghia Lam): Custom hooks
-  set_all_default_hooks(app);
-  set_custom_hook(app, HookID_Tick,                    NL_Tick);
-  set_custom_hook(app, HookID_RenderCaller,            NL_RenderCaller);
-  set_custom_hook(app, HookID_WholeScreenRenderCaller, NL_WholeScreenRenderCaller);
-  
-  // NOTE(Nghia Lam): Binding setup
-  mapping_init(tctx, &framework_mapping);
-  setup_default_mapping(&framework_mapping, mapid_global, mapid_file, mapid_code);
+  // Init startup code here
 }
+
+CUSTOM_COMMAND_SIG(toggle_battery_saver)
+CUSTOM_DOC("Toggle battery saver mode") {
+  global_battery_saver = !global_battery_saver;
+}
+
+CUSTOM_COMMAND_SIG(toggle_filebar_position)
+CUSTOM_DOC("Toggle the position of filebar") {
+  global_filebar_top = !global_filebar_top;
+}
+
+#endif // FCODER_NGHIALAM_COMMANDS
