@@ -54,4 +54,5 @@ void custom_layer_init(Application_Links *app) {
   // NOTE(Nghia Lam): Custom Layer Setups
   NL_SetupCustomHooks(app);
   NL_SetupDefaultBindings(&framework_mapping);
+  NL_SetupVimBindings(&framework_mapping);
 }

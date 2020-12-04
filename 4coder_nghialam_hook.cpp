@@ -28,6 +28,8 @@
 
 //~ NOTE(Nghia Lam): Main Hooks
 function void NL_SetupCustomHooks(Application_Links *app);
+
+function i32  NL_BeginBuffer(Application_Links *app, Buffer_ID buffer_id);
 function void NL_Tick(Application_Links *app, Frame_Info frame_info);
 function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, View_ID view_id);
 function void NL_WholeScreenRenderCaller(Application_Links *app, Frame_Info frame_info);
@@ -36,8 +38,76 @@ function void NL_RenderBuffer(Application_Links *app, View_ID view_id, Face_ID f
 //~ NOTE(Nghia Lam): My Implementation
 function void NL_SetupCustomHooks(Application_Links *app) {
   set_custom_hook(app, HookID_Tick,                    NL_Tick);
+  set_custom_hook(app, HookID_BeginBuffer,             NL_BeginBuffer);
   set_custom_hook(app, HookID_RenderCaller,            NL_RenderCaller);
   set_custom_hook(app, HookID_WholeScreenRenderCaller, NL_WholeScreenRenderCaller);
+}
+
+BUFFER_HOOK_SIG(NL_BeginBuffer) {
+  ProfileScope(app, "[Nghia Lam] Begin Buffer");
+  Scratch_Block scratch(app);
+  b32 treat_as_code = false;
+  String_Const_u8 file_name = push_buffer_file_name(app, scratch, buffer_id);
+  
+  if(file_name.size > 0) {
+    String_Const_u8_Array extensions = global_config.code_exts;
+    String_Const_u8 ext = string_file_extension(file_name);
+    
+    for(i32 i = 0; i < extensions.count; ++i) {
+      if(string_match(ext, extensions.strings[i])) {
+        treat_as_code = true;
+        break;
+      }
+    }
+  }
+  
+  // NOTE(Nghia Lam): Change to vim normal map as default when open a file
+  Managed_Scope scope = buffer_get_managed_scope(app, buffer_id);
+  Command_Map_ID* map_id_ptr = scope_attachment(app, scope, buffer_map_id, Command_Map_ID);
+  *map_id_ptr = vim_mapid_normal;
+  
+  Line_Ending_Kind setting = guess_line_ending_kind_from_buffer(app, buffer_id);
+  Line_Ending_Kind *eol_setting = scope_attachment(app, scope, buffer_eol_setting, Line_Ending_Kind);
+  *eol_setting = setting;
+  
+  // NOTE(allen): Decide buffer settings
+  b32 wrap_lines = true;
+  b32 use_lexer = false;
+  if (treat_as_code) {
+    wrap_lines = global_config.enable_code_wrapping;
+    use_lexer  = true;
+  }
+  
+  String_Const_u8 buffer_name = push_buffer_base_name(app, scratch, buffer_id);
+  if (buffer_name.size > 0 && 
+      buffer_name.str[0] == '*' && 
+      buffer_name.str[buffer_name.size - 1] == '*') {
+    wrap_lines = global_config.enable_output_wrapping;
+  }
+  
+  if (use_lexer) {
+    ProfileBlock(app, "begin buffer kick off lexer");
+    Async_Task *lex_task_ptr = scope_attachment(app, scope, buffer_lex_task, Async_Task);
+    *lex_task_ptr = async_task_no_dep(&global_async_system, do_full_lex_async, make_data_struct(&buffer_id));
+  }
+  
+  {
+    b32 *wrap_lines_ptr = scope_attachment(app, scope, buffer_wrap_lines, b32);
+    *wrap_lines_ptr = wrap_lines;
+  }
+  
+  if (use_lexer) {
+    buffer_set_layout(app, buffer_id, layout_virt_indent_index_generic);
+  } else {
+    if (treat_as_code) {
+      buffer_set_layout(app, buffer_id, layout_virt_indent_literal_generic);
+    } else {
+      buffer_set_layout(app, buffer_id, layout_generic);
+    }
+  }
+  
+  // No meaning when return
+  return 0;
 }
 
 function void NL_Tick(Application_Links *app, Frame_Info frame_info) {
@@ -98,8 +168,8 @@ function void NL_RenderCaller(Application_Links *app,
     Query_Bar *space[32];
     Query_Bar_Ptr_Array query_bars = {};
     query_bars.ptrs                = space;
-    if (get_active_query_bars(app, view_id, ArrayCount(space), &query_bars)){
-      for (i32 i = 0; i < query_bars.count; i += 1){
+    if (get_active_query_bars(app, view_id, ArrayCount(space), &query_bars)) {
+      for (i32 i = 0; i < query_bars.count; i += 1) {
         Rect_f32_Pair pair = layout_query_bar_on_top(region, line_height, 1);
         draw_query_bar(app, query_bars.ptrs[i], face_id, pair.min);
         region = pair.max;
@@ -108,7 +178,7 @@ function void NL_RenderCaller(Application_Links *app,
   }
   
   // NOTE(Nghia Lam): Render fps hub <- Do we really need this??
-  if (show_fps_hud){
+  if (show_fps_hud) {
     Rect_f32_Pair pair = layout_fps_hud_on_bottom(region, line_height);
     draw_fps_hud(app, frame_info, face_id, pair.max);
     region = pair.min;

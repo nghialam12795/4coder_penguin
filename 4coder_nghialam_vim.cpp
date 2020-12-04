@@ -35,4 +35,75 @@ CUSTOM_ID(command_map, vim_mapid_visual);
 #include "generated/managed_id_metadata.cpp"
 #endif
 
+//~ NOTE(Nghia Lam): Type definitions and structures
+enum VIMMODE {
+  VIMMODE_NORMAL,
+  VIMMODE_INSERT,
+  VIMMODE_VISUAL,
+  VIMMODE_VISUALINSERT,
+  VIMMODE_VISUALLINE,
+  VIMMODE_VISUALBLOCK
+};
+
+//~ NOTE(Nghia Lam): Main APIs
+function b32 NL_IsVimInsertMode(VIMMODE mode);
+function b32 NL_IsVimVisualMode(VIMMODE mode);
+function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append = false);
+function void NL_VimChangeMapID(Application_Links *app, Buffer_ID buffer, Command_Map_ID mapid);
+
+//~ NOTE(Nghia Lam): My Implementation
+function b32 NL_IsVimInsertMode(VIMMODE mode) {
+  return ((mode == VIMMODE_INSERT) || (mode == VIMMODE_VISUALINSERT));
+}
+
+function b32 NL_IsVimVisualMode(VIMMODE mode) {
+  return ((mode == VIMMODE_VISUAL)     || 
+          (mode == VIMMODE_VISUALLINE) || 
+          (mode == VIMMODE_VISUALBLOCK));
+}
+
+function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) {
+  u32 access_flags = Access_ReadVisible;
+  if (NL_IsVimInsertMode(mode)) {
+    access_flags |= Access_Write;
+  }
+  
+  View_ID view = get_active_view(app, access_flags);
+  Buffer_ID buffer = view_get_buffer(app, view, access_flags);
+  if (!buffer_exists(app, buffer)) {
+    return;
+  }
+  
+  switch(mode) {
+    case VIMMODE_NORMAL: {
+      // TODO(Nghia Lam): Handle things for normal mode here
+      NL_VimChangeMapID(app, buffer, vim_mapid_normal);
+    } break;
+    
+    case VIMMODE_INSERT: {
+      // TODO(Nghia Lam): Handle things for insert mode here
+      NL_VimChangeMapID(app, buffer, mapid_code);
+    } break;
+    
+    case VIMMODE_VISUALINSERT: {
+      // TODO(Nghia Lam): Handle things for visual insert here
+      NL_VimChangeMapID(app, buffer, mapid_code);
+    } break;
+    
+    case VIMMODE_VISUAL: 
+    case VIMMODE_VISUALLINE:
+    case VIMMODE_VISUALBLOCK: {
+      // TODO(Nghia Lam): Handle things for visual mode here
+      NL_VimChangeMapID(app, buffer, vim_mapid_visual);
+    } break;
+  }
+}
+
+function void NL_VimChangeMapID(Application_Links *app, Buffer_ID buffer, Command_Map_ID mapid) {
+  Managed_Scope scope        = buffer_get_managed_scope(app, buffer);
+  Command_Map_ID* map_id_ptr = scope_attachment(app, scope, buffer_map_id, Command_Map_ID);
+  // NOTE(Nghia Lam): Assign map id here
+  *map_id_ptr = mapid;
+}
+
 #endif // FCODER_NGHIALAM_VIM

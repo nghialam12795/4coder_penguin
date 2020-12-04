@@ -16,7 +16,7 @@ use_scroll_bars = false;
 use_file_bars = true;
 use_error_highlight = true;
 use_jump_highlight = true;
-use_scope_highlight = true;
+use_scope_highlight = false;
 use_paren_helper = true;
 use_comment_keywords = true;
 lister_whole_word_backspace_when_modified = false;
@@ -40,10 +40,10 @@ mark_thickness = 2;
 lister_roundness = 5;
 
 // Code Wrapping
-treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm";
+treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm.4coder";
 enable_virtual_whitespace = true;
 virtual_whitespace_regular_indent = 2;
-enable_code_wrapping = true;
+enable_code_wrapping = false;
 
 // This only applies to code files in code-wrapping mode.
 // Plain text and code files without virtual-whitespace will not be effected.

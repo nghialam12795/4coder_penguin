@@ -31,6 +31,8 @@ global b32 global_dark_mode     = true;
 global b32 global_battery_saver = false;
 global b32 global_filebar_top   = true;
 
+global u8 global_vim_prev_char  = '\0';
+
 //~ NOTE(Nghia Lam): Editor Settings
 #define VIM_ESCAPE_SEQUENCE "jk"
 #define VIM_USE_ECHO_BAR    0

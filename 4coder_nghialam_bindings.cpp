@@ -28,6 +28,7 @@
 
 //~ NOTE(Nghia Lam): Main APIs
 function void NL_SetupDefaultBindings(Mapping *mapping);
+function void NL_SetupVimBindings(Mapping *mapping);
 
 //~ NOTE(Nghia Lam): My Implementation
 function void NL_SetupDefaultBindings(Mapping *mapping) {
@@ -94,7 +95,7 @@ function void NL_SetupDefaultBindings(Mapping *mapping) {
   BindCore(click_set_cursor_and_mark, CoreCode_ClickActivateView);
   BindMouseMove(click_set_cursor_if_lbutton);
   
-  BindTextInput(write_text_input);
+  BindTextInput(vim_write_text_input);
   
   Bind(delete_char,                                   KeyCode_Delete);
   Bind(backspace_char,                                KeyCode_Backspace);
@@ -151,14 +152,13 @@ function void NL_SetupDefaultBindings(Mapping *mapping) {
   Bind(if_read_only_goto_position,                    KeyCode_Return);
   Bind(if_read_only_goto_position_same_panel,         KeyCode_Return,    KeyCode_Shift);
   Bind(view_jump_list_with_lister,                    KeyCode_Period,    KeyCode_Control,   KeyCode_Shift);
-  // Bind(vim_enter_normal_mode_escape,                  KeyCode_Escape);
+  Bind(vim_enter_normal_mode,                         KeyCode_Escape);
   
   // NOTE(Nghia Lam): Code Map
   SelectMap(mapid_code);
   ParentMap(mapid_file);
   
-  // BindTextInput(vim_write_text_abbrev_and_auto_indent);
-  BindTextInput(write_text_and_auto_indent);
+  BindTextInput(vim_write_text_and_auto_indent);
   
   Bind(move_left_alpha_numeric_boundary,                    KeyCode_Left,          KeyCode_Control);
   Bind(move_right_alpha_numeric_boundary,                   KeyCode_Right,         KeyCode_Control);
@@ -191,6 +191,31 @@ function void NL_SetupDefaultBindings(Mapping *mapping) {
   Bind(open_matching_file_cpp,                              KeyCode_2,             KeyCode_Alt);
   Bind(write_zero_struct,                                   KeyCode_0,             KeyCode_Control);
   Bind(jump_to_definition_at_cursor,                        KeyCode_W,             KeyCode_Control);
+}
+
+function void NL_SetupVimBindings(Mapping *mapping) {
+  MappingScope();
+  SelectMapping(mapping);
+  
+  // NOTE(Nghia Lam): Vim Normal map
+  SelectMap(vim_mapid_normal);
+  ParentMap(mapid_global);
+  
+  BindMouse(vim_start_mouse_select, MouseCode_Left);
+  BindMouseRelease(click_set_cursor, MouseCode_Left);
+  BindCore(click_set_cursor_and_mark, CoreCode_ClickActivateView);
+  BindMouseMove(click_set_cursor_if_lbutton);
+  
+  Bind(vim_motion_up,                 KeyCode_K);
+  Bind(vim_motion_down,               KeyCode_J);
+  Bind(vim_motion_left,               KeyCode_H);
+  Bind(vim_motion_right,              KeyCode_L);
+  Bind(vim_motion_word,               KeyCode_W);
+  Bind(vim_motion_word_end,           KeyCode_E);
+  Bind(vim_motion_word_backward,      KeyCode_B);
+  Bind(vim_motion_to_blank_line_up,   KeyCode_LeftBracket,  KeyCode_Shift);
+  Bind(vim_motion_to_blank_line_down, KeyCode_RightBracket,  KeyCode_Shift);
+  Bind(vim_enter_insert_mode,         KeyCode_I);
 }
 
 #endif // FCODER_NGHIALAM_BINDINGS
