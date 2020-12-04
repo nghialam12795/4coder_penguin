@@ -27,12 +27,19 @@
 #define FCODER_NGHIALAM_HOOKS
 
 //~ NOTE(Nghia Lam): Main Hooks
+function void NL_SetupCustomHooks(Application_Links *app);
 function void NL_Tick(Application_Links *app, Frame_Info frame_info);
 function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, View_ID view_id);
 function void NL_WholeScreenRenderCaller(Application_Links *app, Frame_Info frame_info);
 function void NL_RenderBuffer(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Rect_f32 rect);
 
 //~ NOTE(Nghia Lam): My Implementation
+function void NL_SetupCustomHooks(Application_Links *app) {
+  set_custom_hook(app, HookID_Tick,                    NL_Tick);
+  set_custom_hook(app, HookID_RenderCaller,            NL_RenderCaller);
+  set_custom_hook(app, HookID_WholeScreenRenderCaller, NL_WholeScreenRenderCaller);
+}
+
 function void NL_Tick(Application_Links *app, Frame_Info frame_info) {
   // Default tick stuffs from Allen
   default_tick(app, frame_info);

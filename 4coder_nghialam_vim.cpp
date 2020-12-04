@@ -26,6 +26,11 @@
 #if !defined(FCODER_NGHIALAM_VIM)
 #define FCODER_NGHIALAM_VIM
 
+//~ NOTE(Nghia Lam): Vim Setup
+
+CUSTOM_ID(command_map, vim_mapid_normal);
+CUSTOM_ID(command_map, vim_mapid_visual);
+
 #if !defined(META_PASS)
 #include "generated/managed_id_metadata.cpp"
 #endif

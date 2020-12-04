@@ -32,11 +32,12 @@
 #include "4coder_nghialam/4coder_nghialam_draw.cpp"
 #include "4coder_nghialam/4coder_nghialam_hook.cpp"
 #include "4coder_nghialam/4coder_nghialam_commands.cpp"
+#include "4coder_nghialam/4coder_nghialam_bindings.cpp"
 
 //~ TODO(Nghia Lam): Create my custom layer
 //  - [ ] VI Model Editing System ??
 //  - [ ] Plot comment system
-//  - [ ] Stuff for rendering
+//  - [x] Stuff for rendering
 //  - [ ] My own file bar rendering
 //  - [ ] Project management
 //  - [ ] Project todo list
@@ -45,16 +46,12 @@
 void custom_layer_init(Application_Links *app) {
   Thread_Context *tctx = get_thread_context(app);
   
-  // NOTE(Allen): Setup for default framework
+  // NOTE(Allen): Default Setups
   default_framework_init(app);
-  
-  // NOTE(Nghia Lam): Custom hooks
   set_all_default_hooks(app);
-  set_custom_hook(app, HookID_Tick,                    NL_Tick);
-  set_custom_hook(app, HookID_RenderCaller,            NL_RenderCaller);
-  set_custom_hook(app, HookID_WholeScreenRenderCaller, NL_WholeScreenRenderCaller);
-  
-  // NOTE(Nghia Lam): Binding setup
   mapping_init(tctx, &framework_mapping);
-  setup_default_mapping(&framework_mapping, mapid_global, mapid_file, mapid_code);
+  
+  // NOTE(Nghia Lam): Custom Layer Setups
+  NL_SetupCustomHooks(app);
+  NL_SetupDefaultBindings(&framework_mapping);
 }
