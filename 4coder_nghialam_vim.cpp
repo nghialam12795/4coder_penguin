@@ -26,4 +26,8 @@
 #if !defined(FCODER_NGHIALAM_VIM)
 #define FCODER_NGHIALAM_VIM
 
+#if !defined(META_PASS)
+#include "generated/managed_id_metadata.cpp"
+#endif
+
 #endif // FCODER_NGHIALAM_VIM

@@ -25,15 +25,16 @@
 
 // NOTE(Nghia Lam): The order of included files does matter when building
 #include "4coder_default_include.cpp"
-#include "generated/managed_id_metadata.cpp"
 
 #include "4coder_nghialam/4coder_nghialam_base.cpp"
+#include "4coder_nghialam/4coder_nghialam_helpers.cpp"
+#include "4coder_nghialam/4coder_nghialam_vim.cpp"
 #include "4coder_nghialam/4coder_nghialam_draw.cpp"
 #include "4coder_nghialam/4coder_nghialam_hook.cpp"
 #include "4coder_nghialam/4coder_nghialam_commands.cpp"
 
 //~ TODO(Nghia Lam): Create my custom layer
-//  - [ ] VI Model Editing System ?? 
+//  - [ ] VI Model Editing System ??
 //  - [ ] Plot comment system
 //  - [ ] Stuff for rendering
 //  - [ ] My own file bar rendering

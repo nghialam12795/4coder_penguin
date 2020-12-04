@@ -113,7 +113,6 @@ function void NL_RenderCaller(Application_Links *app,
   if (global_config.show_line_number_margins){
     Rect_f32_Pair pair  = layout_line_number_margin(app, buffer, region, digit_advance);
     line_number_rect    = pair.min;
-    line_number_rect.x1 += 4;
     region = pair.max;
   }
   
@@ -129,7 +128,7 @@ function void NL_RenderCaller(Application_Links *app,
   // NOTE(Nghia Lam): Render buffer
   NL_RenderBuffer(app, view_id, face_id, buffer, text_layout_id, region);
   
-  // NOTE(rjf): Draw inactive rectangle
+  // NOTE(rjf): Dim inactive rectangle
   if(is_active_view == 0) {
     draw_rectangle(app, region, 0.f, 0x44000000);
   }
