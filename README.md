@@ -1,10 +1,3 @@
-# 4coder_penguin
+# 4coder configuration by Nghia Lam
 
-My personal configuration of 4coder editor.
-
-## Dependencies
-
-**MacOS**
-```sh
-brew install coreutils
-```
+My personal take on 4coder's custom layer to make my workflow more easily.

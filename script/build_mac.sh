@@ -23,5 +23,5 @@
 
 #!/bin/bash
 
-sh bin/buildsuper_x64-mac.sh 4coder_penguin/4coder_penguin.cpp
+sh bin/buildsuper_x64-mac.sh 4coder_nghialam/4coder_nghialam.cpp
 cp -f custom_4coder.so ../custom_4coder.so
