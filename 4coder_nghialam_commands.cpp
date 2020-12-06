@@ -30,14 +30,6 @@
 CUSTOM_COMMAND_SIG(nghialam_startup);             // Custom layer startup.
 CUSTOM_COMMAND_SIG(toggle_battery_saver);         // Change between batter saver mode <-> normal mode.
 CUSTOM_COMMAND_SIG(toggle_filebar_position);      // Change filebar on top <-> bottom position.
-CUSTOM_COMMAND_SIG(windmove_panel_up);            // Move up from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_down);          // Move down from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_left);          // Move left from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_right);         // Move right from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_swap_up);       // Swap the buffer up from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_swap_down);     // Swap the buffer down from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_swap_left);     // Swap the buffer left from the active view.
-CUSTOM_COMMAND_SIG(windmove_panel_swap_right);    // Swap the buffer right from the active view.
 
 CUSTOM_COMMAND_SIG(vim_motion_left);                // Move cursor left in normal mode.
 CUSTOM_COMMAND_SIG(vim_motion_down);                // Move cursor down in normal mode.
@@ -48,11 +40,31 @@ CUSTOM_COMMAND_SIG(vim_motion_word_end);            // Move cursor to the end of
 CUSTOM_COMMAND_SIG(vim_motion_word_backward);       // Move cursor to the beginning of previous word.
 CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_up);    // Move cursor to the nearest blank line up.
 CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_down);  // Move cursor to the nearest blank line down.
-CUSTOM_COMMAND_SIG(vim_enter_normal_mode);          // Change to Vim-Editor type Normal Mode.
-CUSTOM_COMMAND_SIG(vim_enter_insert_mode);          // Change to Vim-Editor type Insert Mode.
 CUSTOM_COMMAND_SIG(vim_start_mouse_select);         // Vim behavior when using mouse left button.
 CUSTOM_COMMAND_SIG(vim_write_text_input);           // Vim writing text to files.
 CUSTOM_COMMAND_SIG(vim_write_text_and_auto_indent); // Vim writing text to files with indentation.
+CUSTOM_COMMAND_SIG(vim_new_line_below);             // Open a new line below and enter insert mode.
+CUSTOM_COMMAND_SIG(vim_new_line_above);             // Open a new line above and enter insert mode.
+CUSTOM_COMMAND_SIG(vim_enter_normal_mode);          // Change to Vim-Editor type Normal Mode.
+CUSTOM_COMMAND_SIG(vim_enter_append_mode);          // Change to Vim-Editor type Append Mode.
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode);          // Change to Vim-Editor type Insert Mode.
+CUSTOM_COMMAND_SIG(vim_enter_leader_mode);          // Change to Vim-Editor type Leader Mode.
+CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode);   // Change to Vim-Editor type Leader Buffer Mode.
+CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode);   // Change to Vim-Editor type Leader Window Mode.
+
+CUSTOM_COMMAND_SIG(vim_window_vsplit);              // Window vertical split.
+CUSTOM_COMMAND_SIG(vim_window_hsplit);              // Window horizontal split.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_up);       // Move up from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_down);     // Move down from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_left);     // Move left from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_right);    // Move right from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_up);       // Swap the buffer up from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_down);     // Swap the buffer down from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_left);     // Swap the buffer left from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_right);    // Swap the buffer right from the active view.
+
+CUSTOM_COMMAND_SIG(vim_buffer_save);                // Save buffer then enter normal mode
+CUSTOM_COMMAND_SIG(vim_buffer_kill);                // Kill buffer then enter normal mode
 
 //~ NOTE(Nghia Lam): My Implementation
 CUSTOM_COMMAND_SIG(nghialam_startup)
@@ -72,54 +84,121 @@ CUSTOM_DOC("Toggle the position of filebar") {
   global_filebar_top = !global_filebar_top;
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_up)
-CUSTOM_DOC("Move up from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_vsplit)
+CUSTOM_DOC("[vim] Window vertical split.") {
+  open_panel_vsplit(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_window_hsplit)
+CUSTOM_DOC("[vim] Window horizontal split.") {
+  open_panel_hsplit(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_window_panel_move_up)
+CUSTOM_DOC("[vim] Move up from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_UP, false);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_down)
-CUSTOM_DOC("Move down from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_move_down)
+CUSTOM_DOC("[vim] Move down from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_DOWN, false);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_left)
-CUSTOM_DOC("Move left from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_move_left)
+CUSTOM_DOC("[vim] Move left from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_LEFT, false);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_right)
-CUSTOM_DOC("Move right from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_move_right)
+CUSTOM_DOC("[vim] Move right from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_RIGHT, false);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_swap_up)
-CUSTOM_DOC("Swap buffer up from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_up)
+CUSTOM_DOC("[vim] Swap buffer up from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_UP, true);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_swap_down)
-CUSTOM_DOC("Swap buffer down from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_down)
+CUSTOM_DOC("[vim] Swap buffer down from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_DOWN, true);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_swap_left)
-CUSTOM_DOC("Swap buffer left from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_left)
+CUSTOM_DOC("[vim] Swap buffer left from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_LEFT, true);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(windmove_panel_swap_right)
-CUSTOM_DOC("Swap buffer right from the active view.") {
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_right)
+CUSTOM_DOC("[vim] Swap buffer right from the active view.") {
   NL_WindmoveToPanel(app, WINMOVE_RIGHT, true);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_buffer_save)
+CUSTOM_DOC("[vim] Save buffer then enter normal mode.") {
+  save(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_buffer_kill)
+CUSTOM_DOC("[vim] Kill buffer then enter normal mode.") {
+  kill_buffer(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_enter_normal_mode)
 CUSTOM_DOC("[vim] Change to Vim-Editor type Normal Mode.") {
   NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_append_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Append Mode.") {
+  move_right(app);
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_INSERT);
 }
 
 CUSTOM_COMMAND_SIG(vim_enter_insert_mode)
 CUSTOM_DOC("[vim] Change to Vim-Editor type Insert Mode.") {
   NL_VimEnterMode(app, VIMMODE_INSERT);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_leader_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Leader Mode.") {
+  NL_VimEnterMode(app, VIMMODE_LEADER);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Leader Buffer Mode.") {
+  NL_VimEnterMode(app, VIMMODE_LEADER_BUFFER);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Leader Window Mode.") {
+  NL_VimEnterMode(app, VIMMODE_LEADER_WINDOW);
 }
 
 CUSTOM_COMMAND_SIG(vim_start_mouse_select)
@@ -255,5 +334,23 @@ CUSTOM_DOC("[vim] Move cursor to the nearest blank line down.") {
   move_down_to_blank_line_end(app);
   set_mark(app);
 }
+
+CUSTOM_COMMAND_SIG(vim_new_line_below)
+CUSTOM_DOC("[vim] Open a new line below and enter insert mode.") {
+  seek_end_of_textual_line(app);
+  write_text(app, string_u8_litexpr("\n"));
+  NL_VimEnterMode(app, VIMMODE_INSERT);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_new_line_above)
+CUSTOM_DOC("[vim] Open a new line above and enter insert mode.") {
+  seek_beginning_of_textual_line(app);
+  move_left(app);
+  write_text(app, string_u8_litexpr("\n"));
+  NL_VimEnterMode(app, VIMMODE_INSERT);
+  set_mark(app);
+}
+
 
 #endif // FCODER_NGHIALAM_COMMANDS

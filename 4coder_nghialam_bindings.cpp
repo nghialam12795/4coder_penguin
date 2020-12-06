@@ -206,6 +206,8 @@ function void NL_SetupVimBindings(Mapping *mapping) {
   BindCore(click_set_cursor_and_mark, CoreCode_ClickActivateView);
   BindMouseMove(click_set_cursor_if_lbutton);
   
+  Bind(undo,                          KeyCode_U);
+  Bind(command_lister,                KeyCode_Semicolon);
   Bind(vim_motion_up,                 KeyCode_K);
   Bind(vim_motion_down,               KeyCode_J);
   Bind(vim_motion_left,               KeyCode_H);
@@ -213,9 +215,39 @@ function void NL_SetupVimBindings(Mapping *mapping) {
   Bind(vim_motion_word,               KeyCode_W);
   Bind(vim_motion_word_end,           KeyCode_E);
   Bind(vim_motion_word_backward,      KeyCode_B);
-  Bind(vim_motion_to_blank_line_up,   KeyCode_LeftBracket,  KeyCode_Shift);
+  Bind(vim_motion_to_blank_line_up,   KeyCode_LeftBracket,   KeyCode_Shift);
   Bind(vim_motion_to_blank_line_down, KeyCode_RightBracket,  KeyCode_Shift);
+  Bind(vim_new_line_below,            KeyCode_O);
+  Bind(vim_new_line_above,            KeyCode_O,             KeyCode_Shift);
   Bind(vim_enter_insert_mode,         KeyCode_I);
+  Bind(vim_enter_append_mode,         KeyCode_A);
+  Bind(vim_enter_leader_mode,         KeyCode_Space);
+  
+  // NOTE(Nghia Lam): Vim Leader map
+  SelectMap(vim_mapid_leader);
+  Bind(vim_enter_normal_mode,         KeyCode_Escape);
+  Bind(vim_enter_leader_buffer_mode,  KeyCode_B);
+  Bind(vim_enter_leader_window_mode,  KeyCode_W);
+  
+  // NOTE(Nghia Lam): Vim Leader Window map
+  SelectMap(vim_mapid_leader_window);
+  Bind(vim_enter_normal_mode,         KeyCode_Escape);
+  Bind(vim_window_vsplit,             KeyCode_V);
+  Bind(vim_window_hsplit,             KeyCode_S);
+  Bind(vim_window_panel_move_up,      KeyCode_K);
+  Bind(vim_window_panel_move_down,    KeyCode_J);
+  Bind(vim_window_panel_move_left,    KeyCode_H);
+  Bind(vim_window_panel_move_right,   KeyCode_L);
+  Bind(vim_window_panel_swap_up,      KeyCode_K,        KeyCode_Shift);
+  Bind(vim_window_panel_swap_down,    KeyCode_J,        KeyCode_Shift);
+  Bind(vim_window_panel_swap_left,    KeyCode_H,        KeyCode_Shift);
+  Bind(vim_window_panel_swap_right,   KeyCode_L,        KeyCode_Shift);
+  
+  // NOTE(Nghia Lam): Vim Leader Buffer map
+  SelectMap(vim_mapid_leader_buffer);
+  Bind(vim_enter_normal_mode,         KeyCode_Escape);
+  Bind(vim_buffer_save,               KeyCode_S);
+  Bind(vim_buffer_kill,               KeyCode_K);
 }
 
 #endif // FCODER_NGHIALAM_BINDINGS

@@ -30,6 +30,9 @@
 
 CUSTOM_ID(command_map, vim_mapid_normal);
 CUSTOM_ID(command_map, vim_mapid_visual);
+CUSTOM_ID(command_map, vim_mapid_leader);
+CUSTOM_ID(command_map, vim_mapid_leader_buffer);
+CUSTOM_ID(command_map, vim_mapid_leader_window);
 
 #if !defined(META_PASS)
 #include "generated/managed_id_metadata.cpp"
@@ -42,7 +45,10 @@ enum VIMMODE {
   VIMMODE_VISUAL,
   VIMMODE_VISUALINSERT,
   VIMMODE_VISUALLINE,
-  VIMMODE_VISUALBLOCK
+  VIMMODE_VISUALBLOCK,
+  VIMMODE_LEADER,
+  VIMMODE_LEADER_BUFFER,
+  VIMMODE_LEADER_WINDOW,
 };
 
 //~ NOTE(Nghia Lam): Main APIs
@@ -95,6 +101,17 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
     case VIMMODE_VISUALBLOCK: {
       // TODO(Nghia Lam): Handle things for visual mode here
       NL_VimChangeMapID(app, buffer, vim_mapid_visual);
+    } break;
+    
+    // NOTE(Nghia Lam): Custom vim keybindings
+    case VIMMODE_LEADER: {
+      NL_VimChangeMapID(app, buffer, vim_mapid_leader);
+    } break;
+    case VIMMODE_LEADER_BUFFER: {
+      NL_VimChangeMapID(app, buffer, vim_mapid_leader_buffer);
+    } break;
+    case VIMMODE_LEADER_WINDOW: {
+      NL_VimChangeMapID(app, buffer, vim_mapid_leader_window);
     } break;
   }
 }
