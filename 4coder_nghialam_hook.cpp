@@ -33,7 +33,7 @@ function i32  NL_BeginBuffer(Application_Links *app, Buffer_ID buffer_id);
 function void NL_Tick(Application_Links *app, Frame_Info frame_info);
 function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, View_ID view_id);
 function void NL_WholeScreenRenderCaller(Application_Links *app, Frame_Info frame_info);
-function void NL_RenderBuffer(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Rect_f32 rect);
+function void NL_RenderBuffer(Application_Links *app, View_ID view_id, Face_ID face_id, Buffer_ID buffer, Text_Layout_ID text_layout_id, Rect_f32 rect, Frame_Info frame_info);
 
 //~ NOTE(Nghia Lam): My Implementation
 function void NL_SetupCustomHooks(Application_Links *app) {
@@ -203,7 +203,7 @@ function void NL_RenderCaller(Application_Links *app,
   }
   
   // NOTE(Nghia Lam): Render buffer
-  NL_RenderBuffer(app, view_id, face_id, buffer, text_layout_id, region);
+  NL_RenderBuffer(app, view_id, face_id, buffer, text_layout_id, region, frame_info);
   
   // NOTE(rjf): Dim inactive rectangle
   if(is_active_view == 0) {
@@ -220,13 +220,13 @@ function void NL_WholeScreenRenderCaller(Application_Links *app,
   // TODO(Nghia Lam): Find a way to work with this, maybe render item list and todo list here.
 }
 
-
 function void NL_RenderBuffer(Application_Links *app, 
                               View_ID view_id,
                               Face_ID face_id,
                               Buffer_ID buffer,
                               Text_Layout_ID text_layout_id,
-                              Rect_f32 rect) {
+                              Rect_f32 rect,
+                              Frame_Info frame_info) {
   ProfileScope(app, "[NghiaLam] Render Buffer");
   
   View_ID active_view = get_active_view(app, Access_Always);
@@ -326,20 +326,21 @@ function void NL_RenderBuffer(Application_Links *app,
     draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
   }
   
-  // NOTE(Allen): Cursor
+  // NOTE(Nghia Lam): Cursor
   Face_Metrics metrics = get_face_metrics(app, face_id);
   f32 cursor_roundness = metrics.normal_advance * global_config.cursor_roundness;
   f32 mark_thickness   = (f32) global_config.mark_thickness;
   
   switch (fcoder_mode) {
     case FCoderMode_Original: {
-      draw_original_4coder_style_cursor_mark_highlight(app, 
-                                                       view_id, 
-                                                       is_active_view, 
-                                                       buffer, 
-                                                       text_layout_id, 
-                                                       cursor_roundness, 
-                                                       mark_thickness);
+      NL_DrawCursorMark(app, 
+                        view_id, 
+                        is_active_view, 
+                        buffer, 
+                        text_layout_id, 
+                        cursor_roundness, 
+                        mark_thickness,
+                        frame_info);
     } break;
     case FCoderMode_NotepadLike: {
       draw_notepad_style_cursor_highlight(app, view_id, buffer, text_layout_id, cursor_roundness);

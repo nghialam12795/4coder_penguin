@@ -30,6 +30,10 @@
 global b32 global_dark_mode     = true;
 global b32 global_battery_saver = false;
 global b32 global_filebar_top   = true;
+global Rect_f32 global_cursor_rect      = {0};
+global Rect_f32 global_last_cursor_rect = {0};
+global Rect_f32 global_mark_rect        = {0};
+global Rect_f32 global_last_mark_rect   = {0};
 
 global u8 global_vim_prev_char  = '\0';
 

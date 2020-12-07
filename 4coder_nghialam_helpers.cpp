@@ -36,6 +36,7 @@ enum WINMOVE_DIRECTION {
 
 //~ NOTE(Nghia Lam): Main Function Helpers
 function void NL_WindmoveToPanel(Application_Links* app, u8 direction, b32 swap_on_move);
+function void NL_CursorInterpolation(Application_Links *app, Frame_Info frame_info, Rect_f32 *rect, Rect_f32 *last_rect, Rect_f32 target);
 
 //~ NOTE(Nghia Lam): My Implementation
 function void NL_WindmoveToPanel(Application_Links* app, 
@@ -157,6 +158,48 @@ function void NL_WindmoveToPanel(Application_Links* app,
       Buffer_ID target_buffer = view_get_buffer(app, target_view, Access_Always);
       view_set_buffer(app, target_view, cur_buffer, Access_Always);
       view_set_buffer(app, view_id, target_buffer, Access_Always);
+    }
+  }
+}
+
+function void NL_CursorInterpolation(Application_Links *app, 
+                                     Frame_Info frame_info, 
+                                     Rect_f32 *rect, 
+                                     Rect_f32 *last_rect, 
+                                     Rect_f32 target) {
+  *last_rect = *rect;
+  
+  float x_change = target.x0 - rect->x0;
+  float y_change = target.y0 - rect->y0;
+  
+  float cursor_size_x = (target.x1 - target.x0);
+  float cursor_size_y = (target.y1 - target.y0) * (1 + fabsf(y_change) / 60.f);
+  
+  b32 should_animate_cursor = !global_battery_saver;
+  if(should_animate_cursor) {
+    if(fabs(x_change) > 1.f || fabs(y_change) > 1.f) {
+      animate_in_n_milliseconds(app, 0);
+    }
+  }
+  else {
+    *rect = *last_rect = target;
+    cursor_size_y = target.y1 - target.y0;
+  }
+  
+  if(should_animate_cursor) {
+    rect->x0 += (x_change) * frame_info.animation_dt * 30.f;
+    rect->y0 += (y_change) * frame_info.animation_dt * 30.f;
+    rect->x1 = rect->x0 + cursor_size_x;
+    rect->y1 = rect->y0 + cursor_size_y;
+  }
+  
+  if(target.y0 > last_rect->y0) {
+    if(rect->y0 < last_rect->y0) {
+      rect->y0 = last_rect->y0;
+    }
+  } else {
+    if(rect->y1 > last_rect->y1) {
+      rect->y1 = last_rect->y1;
     }
   }
 }

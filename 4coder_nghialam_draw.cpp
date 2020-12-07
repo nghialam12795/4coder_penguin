@@ -32,6 +32,7 @@ function void NL_DrawFileBar(Application_Links *app, View_ID view_id, Buffer_ID 
 function void NL_DrawCppTokenColors(Application_Links *app, Text_Layout_ID text_layout_id, Token_Array *array);
 function void NL_DrawBraceHighlight(Application_Links *app, Buffer_ID buffer, Text_Layout_ID text_layout_id, i64 position, ARGB_Color *colors, i32 color_count);
 function void NL_DrawDividerComment(Application_Links *app, Buffer_ID buffer, View_ID view, Text_Layout_ID text_layout_id);
+function void NL_DrawCursorMark(Application_Links *app, View_ID view_id, b32 is_active_view, Buffer_ID buffer, Text_Layout_ID text_layout_id, f32 roundness, f32 outline_thickness, Frame_Info frame_info);
 
 //~ NOTE(Nghia Lam): My Implementation
 function Rect_f32 NL_DrawBackground(Application_Links* app, 
@@ -165,6 +166,113 @@ function void NL_DrawDividerComment(Application_Links *app,
       }
     }
   }
+}
+
+function void NL_DrawCursorMark(Application_Links *app, 
+                                View_ID view_id, 
+                                b32 is_active_view, 
+                                Buffer_ID buffer, 
+                                Text_Layout_ID text_layout_id, 
+                                f32 roundness, 
+                                f32 outline_thickness,
+                                Frame_Info frame_info) {
+  b32 has_highlight_range = draw_highlight_range(app, view_id, buffer, text_layout_id, roundness);
+  if (!has_highlight_range) {
+    i32 cursor_sub_id       = default_cursor_sub_id();
+    i64 cursor_pos          = view_get_cursor_pos(app, view_id);
+    i64 mark_pos            = view_get_mark_pos(app, view_id);
+    Rect_f32 view_rect      = view_get_screen_rect(app, view_id);
+    Rect_f32 clip           = draw_set_clip(app, view_rect);
+    Range_i64 visible_range = text_layout_get_visible_range(app, text_layout_id);
+    
+    // NOTE(Nghia Lam): Draw main cursor
+    if (is_active_view) {
+      Rect_f32 target_cursor = text_layout_character_on_screen(app, text_layout_id, cursor_pos);
+      if(cursor_pos < visible_range.start || cursor_pos > visible_range.end) {
+        f32 width = target_cursor.x1 - target_cursor.x0;
+        target_cursor.x0 = view_rect.x0;
+        target_cursor.x1 = target_cursor.x0 + width;
+      }
+      
+      NL_CursorInterpolation(app, frame_info, &global_cursor_rect, &global_last_cursor_rect, target_cursor);
+      
+      Rect_f32 target_mark = text_layout_character_on_screen(app, text_layout_id, mark_pos);
+      if(mark_pos > visible_range.end) {
+        target_mark.x0 = 0;
+        target_mark.y0 = view_rect.y1;
+        target_mark.y1 = view_rect.y1;
+      }
+      
+      if(mark_pos < visible_range.start || mark_pos > visible_range.end) {
+        f32 width = target_mark.x1 - target_mark.x0;
+        target_mark.x0 = view_rect.x0;
+        target_mark.x1 = target_mark.x0 + width;
+      }
+      
+      NL_CursorInterpolation(app, frame_info, &global_mark_rect, &global_last_mark_rect, target_mark);
+      
+      draw_rectangle(app,
+                     global_cursor_rect,
+                     roundness, 
+                     fcolor_resolve(fcolor_id(defcolor_cursor, cursor_sub_id)));
+      paint_text_color_pos(app, 
+                           text_layout_id, 
+                           cursor_pos, 
+                           fcolor_id(defcolor_at_cursor));
+      // draw_rectangle_outline(app, global_mark_rect, roundness, outline_thickness, fcolor_resolve(fcolor_id(defcolor_mark)));
+      
+    } else {
+      draw_character_wire_frame(app, 
+                                text_layout_id, 
+                                mark_pos,
+                                roundness, 
+                                outline_thickness,
+                                fcolor_id(defcolor_mark));
+      draw_character_wire_frame(app,
+                                text_layout_id,
+                                cursor_pos, 
+                                roundness, 
+                                outline_thickness, 
+                                fcolor_id(defcolor_cursor, cursor_sub_id));
+    }
+    
+    draw_set_clip(app, clip);
+  }
+  
+  // NOTE(Nghia Lam): Draw mark highlight
+  if (is_active_view && NL_IsVimInsertMode(global_vim_mode)) {
+    Rect_f32 view_rect = view_get_screen_rect(app, view_id);
+    Rect_f32 clip = draw_set_clip(app, view_rect);
+    
+    f32 lower_bound_y;
+    f32 upper_bound_y;
+    f32 lower_bound_x;
+    f32 upper_bound_x;
+    
+    if(global_last_cursor_rect.y0 < global_last_mark_rect.y0) {
+      lower_bound_y = global_last_cursor_rect.y0;
+      upper_bound_y = global_last_mark_rect.y1;
+    } else {
+      lower_bound_y = global_last_mark_rect.y0;
+      upper_bound_y = global_last_cursor_rect.y1;
+    }
+    
+    if (global_last_cursor_rect.x0 < global_last_mark_rect.x0) {
+      lower_bound_x = global_last_cursor_rect.x0;
+      upper_bound_x = global_last_mark_rect.x1;
+    } else {
+      lower_bound_x = global_last_mark_rect.x0;
+      upper_bound_x = global_last_cursor_rect.x1;
+    }
+    
+    draw_rectangle_outline(app, 
+                           Rf32(lower_bound_x, lower_bound_y, upper_bound_x, upper_bound_y), 
+                           2.f,
+                           3.f,
+                           fcolor_resolve(fcolor_change_alpha(fcolor_id(defcolor_comment), 0.5f)));
+    draw_set_clip(app, clip);
+  }
+  
 }
 
 #endif // FCODER_NGHIALAM_DRAW

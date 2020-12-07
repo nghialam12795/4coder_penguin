@@ -27,9 +27,9 @@
 #define FCODER_NGHIALAM_COMMAND
 
 //~ NOTE(Nghia Lam): Main APIs
-CUSTOM_COMMAND_SIG(nghialam_startup);             // Custom layer startup.
-CUSTOM_COMMAND_SIG(toggle_battery_saver);         // Change between batter saver mode <-> normal mode.
-CUSTOM_COMMAND_SIG(toggle_filebar_position);      // Change filebar on top <-> bottom position.
+CUSTOM_COMMAND_SIG(nghialam_startup);               // Custom layer startup.
+CUSTOM_COMMAND_SIG(toggle_battery_saver);           // Change between batter saver mode <-> normal mode.
+CUSTOM_COMMAND_SIG(toggle_filebar_position);        // Change filebar on top <-> bottom position.
 
 CUSTOM_COMMAND_SIG(vim_motion_left);                // Move cursor left in normal mode.
 CUSTOM_COMMAND_SIG(vim_motion_down);                // Move cursor down in normal mode.
@@ -48,9 +48,19 @@ CUSTOM_COMMAND_SIG(vim_new_line_above);             // Open a new line above and
 CUSTOM_COMMAND_SIG(vim_enter_normal_mode);          // Change to Vim-Editor type Normal Mode.
 CUSTOM_COMMAND_SIG(vim_enter_append_mode);          // Change to Vim-Editor type Append Mode.
 CUSTOM_COMMAND_SIG(vim_enter_insert_mode);          // Change to Vim-Editor type Insert Mode.
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode_bol);      // Change to Vim_Editor type Insert Mode at the beginning of line.
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode_eol);      // Change to Vim_Editor type Insert Mode at the end of line.
+CUSTOM_COMMAND_SIG(vim_enter_delete_mode);          // Change to Vim-Editor type Delete Mode.
+CUSTOM_COMMAND_SIG(vim_enter_yank_mode);            // Change to Vim-Editor type Yank Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_mode);          // Change to Vim-Editor type Leader Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode);   // Change to Vim-Editor type Leader Buffer Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode);   // Change to Vim-Editor type Leader Window Mode.
+
+CUSTOM_COMMAND_SIG(vim_delete_line);                // Delete whole line and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_up);                  // Delete line up and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_down);                // Delete line down and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_word_end);            // Delete till the end of word and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_word_backward);       // Delete to the beginning of word and enter normal mode.
 
 CUSTOM_COMMAND_SIG(vim_window_vsplit);              // Window vertical split.
 CUSTOM_COMMAND_SIG(vim_window_hsplit);              // Window horizontal split.
@@ -69,9 +79,24 @@ CUSTOM_COMMAND_SIG(vim_buffer_kill);                // Kill buffer then enter no
 //~ NOTE(Nghia Lam): My Implementation
 CUSTOM_COMMAND_SIG(nghialam_startup)
 CUSTOM_DOC("NghiaLam's custom layer startup event") {
-  ProfileScope(app, "default startup");
+  ProfileScope(app, "[Nghia Lam] Default startup");
   
   // Init startup code here
+  User_Input input = get_current_input(app);
+  if(match_core_code(&input, CoreCode_Startup)) {
+    String_Const_u8_Array file_names = input.event.core.file_names;
+    
+    load_themes_default_folder(app);
+    default_4coder_initialize(app, file_names);
+    default_4coder_side_by_side_panels(app, file_names);
+    
+    if (global_config.automatically_load_project) {
+      load_project(app);
+    }
+    
+    // Custom startup
+    toggle_fullscreen(app);
+  }
 }
 
 CUSTOM_COMMAND_SIG(toggle_battery_saver)
@@ -184,6 +209,30 @@ CUSTOM_DOC("[vim] Change to Vim-Editor type Append Mode.") {
 CUSTOM_COMMAND_SIG(vim_enter_insert_mode)
 CUSTOM_DOC("[vim] Change to Vim-Editor type Insert Mode.") {
   NL_VimEnterMode(app, VIMMODE_INSERT);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode_bol)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Insert Mode.") {
+  seek_beginning_of_textual_line(app);
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_INSERT);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode_eol)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Insert Mode.") {
+  seek_end_of_textual_line(app);
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_INSERT);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_delete_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Delete Mode.") {
+  NL_VimEnterMode(app, VIMMODE_DELETE);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_yank_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Yank Mode.") {
+  NL_VimEnterMode(app, VIMMODE_YANK);
 }
 
 CUSTOM_COMMAND_SIG(vim_enter_leader_mode)
@@ -352,5 +401,44 @@ CUSTOM_DOC("[vim] Open a new line above and enter insert mode.") {
   set_mark(app);
 }
 
+CUSTOM_COMMAND_SIG(vim_delete_line)
+CUSTOM_DOC("[vim] Delete whole line and enter normal mode.") {
+  // NOTE(Nghia Lam): Copy first
+  set_mark(app);
+  seek_end_of_textual_line(app);
+  copy(app);
+  // NOTE(Nghia Lam): Then delete
+  delete_line(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_delete_up)
+CUSTOM_DOC("[vim] Delete line up and enter normal mode.") {
+  // TODO(Nghia Lam): Implement this.
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_delete_down)
+CUSTOM_DOC("[vim] Delete line down and enter normal mode.") {
+  // TODO(Nghia Lam): Implement this.
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_delete_word_end)
+CUSTOM_DOC("[vim] Delete till the end of word and enter normal mode.") {
+  // TODO(Nghia Lam): Implement this.
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_delete_word_backward)
+CUSTOM_DOC("[vim] Delete to the beginning of word and enter normal mode.") {
+  // TODO(Nghia Lam): Implement this.
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
 
 #endif // FCODER_NGHIALAM_COMMANDS

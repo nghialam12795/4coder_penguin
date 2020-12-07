@@ -206,22 +206,42 @@ function void NL_SetupVimBindings(Mapping *mapping) {
   BindCore(click_set_cursor_and_mark, CoreCode_ClickActivateView);
   BindMouseMove(click_set_cursor_if_lbutton);
   
-  Bind(undo,                          KeyCode_U);
-  Bind(command_lister,                KeyCode_Semicolon);
-  Bind(vim_motion_up,                 KeyCode_K);
-  Bind(vim_motion_down,               KeyCode_J);
-  Bind(vim_motion_left,               KeyCode_H);
-  Bind(vim_motion_right,              KeyCode_L);
-  Bind(vim_motion_word,               KeyCode_W);
-  Bind(vim_motion_word_end,           KeyCode_E);
-  Bind(vim_motion_word_backward,      KeyCode_B);
-  Bind(vim_motion_to_blank_line_up,   KeyCode_LeftBracket,   KeyCode_Shift);
-  Bind(vim_motion_to_blank_line_down, KeyCode_RightBracket,  KeyCode_Shift);
-  Bind(vim_new_line_below,            KeyCode_O);
-  Bind(vim_new_line_above,            KeyCode_O,             KeyCode_Shift);
-  Bind(vim_enter_insert_mode,         KeyCode_I);
-  Bind(vim_enter_append_mode,         KeyCode_A);
-  Bind(vim_enter_leader_mode,         KeyCode_Space);
+  Bind(undo,                           KeyCode_U);
+  Bind(delete_char,                    KeyCode_X);
+  Bind(paste_and_indent,               KeyCode_P);
+  Bind(command_lister,                 KeyCode_Semicolon,     KeyCode_Shift);
+  Bind(seek_beginning_of_textual_line, KeyCode_0);
+  Bind(seek_end_of_textual_line,       KeyCode_4,             KeyCode_Shift);
+  Bind(seek_beginning_of_textual_line, KeyCode_H,             KeyCode_Shift);
+  Bind(seek_end_of_textual_line,       KeyCode_L,             KeyCode_Shift);
+  Bind(vim_motion_up,                  KeyCode_K);
+  Bind(vim_motion_down,                KeyCode_J);
+  Bind(vim_motion_left,                KeyCode_H);
+  Bind(vim_motion_right,               KeyCode_L);
+  Bind(vim_motion_word,                KeyCode_W);
+  Bind(vim_motion_word_end,            KeyCode_E);
+  Bind(vim_motion_word_backward,       KeyCode_B);
+  Bind(vim_motion_to_blank_line_up,    KeyCode_LeftBracket,   KeyCode_Shift);
+  Bind(vim_motion_to_blank_line_down,  KeyCode_RightBracket,  KeyCode_Shift);
+  Bind(vim_new_line_below,             KeyCode_O);
+  Bind(vim_new_line_above,             KeyCode_O,             KeyCode_Shift);
+  Bind(vim_enter_insert_mode,          KeyCode_I);
+  Bind(vim_enter_append_mode,          KeyCode_A);
+  Bind(vim_enter_delete_mode,          KeyCode_D);
+  Bind(vim_enter_leader_mode,          KeyCode_Space);
+  
+  // NOTE(Nghia Lam): Vim Delete map
+  SelectMap(vim_mapid_delete);
+  Bind(vim_enter_normal_mode,         KeyCode_Escape);
+  Bind(vim_delete_line,               KeyCode_D);
+  Bind(vim_delete_up,                 KeyCode_K);
+  Bind(vim_delete_down,               KeyCode_J);
+  Bind(vim_delete_word_end,           KeyCode_E);
+  Bind(vim_delete_word_backward,      KeyCode_B);
+  
+  // NOTE(Nghia Lam): Vim Yank map
+  SelectMap(vim_mapid_yank);
+  Bind(vim_enter_normal_mode,         KeyCode_Escape);
   
   // NOTE(Nghia Lam): Vim Leader map
   SelectMap(vim_mapid_leader);
