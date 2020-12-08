@@ -40,6 +40,9 @@ CUSTOM_COMMAND_SIG(vim_motion_word_end);            // Move cursor to the end of
 CUSTOM_COMMAND_SIG(vim_motion_word_backward);       // Move cursor to the beginning of previous word.
 CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_up);    // Move cursor to the nearest blank line up.
 CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_down);  // Move cursor to the nearest blank line down.
+CUSTOM_COMMAND_SIG(vim_motion_to_begin_of_file);    // Move cursor to the beginning of the file.
+CUSTOM_COMMAND_SIG(vim_motion_to_end_of_file);      // Move cursor to the end of the file.
+CUSTOM_COMMAND_SIG(vim_jump_to_defition_at_cursor); // Jump to the definition of the identifier at cursor. 
 CUSTOM_COMMAND_SIG(vim_start_mouse_select);         // Vim behavior when using mouse left button.
 CUSTOM_COMMAND_SIG(vim_write_text_input);           // Vim writing text to files.
 CUSTOM_COMMAND_SIG(vim_write_text_and_auto_indent); // Vim writing text to files with indentation.
@@ -52,9 +55,15 @@ CUSTOM_COMMAND_SIG(vim_enter_insert_mode_bol);      // Change to Vim_Editor type
 CUSTOM_COMMAND_SIG(vim_enter_insert_mode_eol);      // Change to Vim_Editor type Insert Mode at the end of line.
 CUSTOM_COMMAND_SIG(vim_enter_delete_mode);          // Change to Vim-Editor type Delete Mode.
 CUSTOM_COMMAND_SIG(vim_enter_yank_mode);            // Change to Vim-Editor type Yank Mode.
+CUSTOM_COMMAND_SIG(vim_enter_view_mode);            // Change to Vim-Editor type View Mode.
+CUSTOM_COMMAND_SIG(vim_enter_goto_mode);            // Change to Vim-Editor type Goto Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_mode);          // Change to Vim-Editor type Leader Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode);   // Change to Vim-Editor type Leader Buffer Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode);   // Change to Vim-Editor type Leader Window Mode.
+
+CUSTOM_COMMAND_SIG(vim_yank_line);                  // Copy whole line and enter normal mode.
+
+CUSTOM_COMMAND_SIG(vim_view_center);                // Center the view and enter normal mode.
 
 CUSTOM_COMMAND_SIG(vim_delete_line);                // Delete whole line and enter normal mode.
 CUSTOM_COMMAND_SIG(vim_delete_up);                  // Delete line up and enter normal mode.
@@ -235,6 +244,16 @@ CUSTOM_DOC("[vim] Change to Vim-Editor type Yank Mode.") {
   NL_VimEnterMode(app, VIMMODE_YANK);
 }
 
+CUSTOM_COMMAND_SIG(vim_enter_view_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type View Mode.") {
+  NL_VimEnterMode(app, VIMMODE_VIEW);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_goto_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Goto Mode.") {
+  NL_VimEnterMode(app, VIMMODE_GOTO);
+}
+
 CUSTOM_COMMAND_SIG(vim_enter_leader_mode)
 CUSTOM_DOC("[vim] Change to Vim-Editor type Leader Mode.") {
   NL_VimEnterMode(app, VIMMODE_LEADER);
@@ -384,6 +403,27 @@ CUSTOM_DOC("[vim] Move cursor to the nearest blank line down.") {
   set_mark(app);
 }
 
+CUSTOM_COMMAND_SIG(vim_motion_to_begin_of_file)
+CUSTOM_DOC("[vim] Move cursor to the beginning of the file.") {
+  goto_beginning_of_file(app);
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+}
+
+CUSTOM_COMMAND_SIG(vim_motion_to_end_of_file)
+CUSTOM_DOC("[vim] Move cursor to the end of the file.") {
+  goto_end_of_file(app);
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+}
+
+CUSTOM_COMMAND_SIG(vim_jump_to_defition_at_cursor)
+CUSTOM_DOC("[vim] Jump to the definition of the identifier at cursor.") {
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  jump_to_definition_at_cursor(app);
+}
+
 CUSTOM_COMMAND_SIG(vim_new_line_below)
 CUSTOM_DOC("[vim] Open a new line below and enter insert mode.") {
   seek_end_of_textual_line(app);
@@ -401,13 +441,33 @@ CUSTOM_DOC("[vim] Open a new line above and enter insert mode.") {
   set_mark(app);
 }
 
-CUSTOM_COMMAND_SIG(vim_delete_line)
-CUSTOM_DOC("[vim] Delete whole line and enter normal mode.") {
+CUSTOM_COMMAND_SIG(vim_yank_line)
+CUSTOM_DOC("[vim] Copy whole line and enter normal mode.") {
   // NOTE(Nghia Lam): Copy first
+  seek_beginning_of_textual_line(app);
   set_mark(app);
   seek_end_of_textual_line(app);
   copy(app);
-  // NOTE(Nghia Lam): Then delete
+  // NOTE(Nghia Lam): Then enter normal mode
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_view_center)
+CUSTOM_DOC("[vim] Center the view and enter normal mode.") {
+  center_view(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_delete_line)
+CUSTOM_DOC("[vim] Delete whole line and enter normal mode.") {
+  // NOTE(Nghia Lam): Copy first
+  seek_beginning_of_textual_line(app);
+  set_mark(app);
+  seek_end_of_textual_line(app);
+  copy(app);
+  // NOTE(Nghia Lam): Then delete and enter normal mode.
   delete_line(app);
   NL_VimEnterMode(app, VIMMODE_NORMAL);
   set_mark(app);

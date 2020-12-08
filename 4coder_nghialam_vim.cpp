@@ -31,6 +31,8 @@
 CUSTOM_ID(command_map, vim_mapid_normal);
 CUSTOM_ID(command_map, vim_mapid_visual);
 CUSTOM_ID(command_map, vim_mapid_yank);
+CUSTOM_ID(command_map, vim_mapid_goto);
+CUSTOM_ID(command_map, vim_mapid_view);
 CUSTOM_ID(command_map, vim_mapid_delete);
 CUSTOM_ID(command_map, vim_mapid_leader);
 CUSTOM_ID(command_map, vim_mapid_leader_buffer);
@@ -45,6 +47,8 @@ enum VIMMODE {
   VIMMODE_NORMAL,
   VIMMODE_INSERT,
   VIMMODE_YANK,
+  VIMMODE_GOTO,
+  VIMMODE_VIEW,
   VIMMODE_DELETE,
   VIMMODE_VISUAL,
   VIMMODE_VISUALINSERT,
@@ -80,6 +84,7 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
     access_flags |= Access_Write;
   }
   
+  // Is this really necessary?
   View_ID view = get_active_view(app, access_flags);
   Buffer_ID buffer = view_get_buffer(app, view, access_flags);
   if (!buffer_exists(app, buffer)) {
@@ -117,6 +122,14 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
     
     case VIMMODE_YANK: {
       NL_VimChangeMapID(app, buffer, vim_mapid_yank);
+    } break;
+    
+    case VIMMODE_GOTO: {
+      NL_VimChangeMapID(app, buffer, vim_mapid_goto);
+    } break;
+    
+    case VIMMODE_VIEW: {
+      NL_VimChangeMapID(app, buffer, vim_mapid_view);
     } break;
     
     // NOTE(Nghia Lam): Custom vim keybindings

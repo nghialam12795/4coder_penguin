@@ -239,7 +239,7 @@ function void NL_DrawCursorMark(Application_Links *app,
     draw_set_clip(app, clip);
   }
   
-  // NOTE(Nghia Lam): Draw mark highlight
+  // NOTE(Nghia Lam): Draw mark highlight in insert mode
   if (is_active_view && NL_IsVimInsertMode(global_vim_mode)) {
     Rect_f32 view_rect = view_get_screen_rect(app, view_id);
     Rect_f32 clip = draw_set_clip(app, view_rect);
