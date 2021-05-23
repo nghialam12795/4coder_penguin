@@ -1,0 +1,3 @@
+[submodule "external/fleury"]
+	path = external/fleury
+	url = https://github.com/zZnghialamZz/4coder_fleury.git

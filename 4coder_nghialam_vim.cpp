@@ -38,9 +38,6 @@ CUSTOM_ID(command_map, vim_mapid_leader);
 CUSTOM_ID(command_map, vim_mapid_leader_buffer);
 CUSTOM_ID(command_map, vim_mapid_leader_window);
 
-#if !defined(META_PASS)
-#include "generated/managed_id_metadata.cpp"
-#endif
 
 //~ NOTE(Nghia Lam): Type definitions and structures
 enum VIMMODE {
@@ -91,6 +88,8 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
     return;
   }
   
+  String_ID code_map_id = vars_save_string_lit("keys_code");
+  
   global_vim_mode = mode;
   
   switch(mode) {
@@ -101,12 +100,12 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
     
     case VIMMODE_INSERT: {
       // TODO(Nghia Lam): Handle things for insert mode here
-      NL_VimChangeMapID(app, buffer, mapid_code);
+      NL_VimChangeMapID(app, buffer, code_map_id);
     } break;
     
     case VIMMODE_VISUALINSERT: {
       // TODO(Nghia Lam): Handle things for visual insert here
-      NL_VimChangeMapID(app, buffer, mapid_code);
+      NL_VimChangeMapID(app, buffer, code_map_id);
     } break;
     
     case VIMMODE_VISUAL: 

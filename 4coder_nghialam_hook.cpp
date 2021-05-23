@@ -38,9 +38,19 @@ function void NL_RenderBuffer(Application_Links *app, View_ID view_id, Face_ID f
 //~ NOTE(Nghia Lam): My Implementation
 function void NL_SetupCustomHooks(Application_Links *app) {
   set_custom_hook(app, HookID_Tick,                    NL_Tick);
-  set_custom_hook(app, HookID_BeginBuffer,             NL_BeginBuffer);
+  
+  /*set_custom_hook(app, HookID_BeginBuffer,             NL_BeginBuffer);
   set_custom_hook(app, HookID_RenderCaller,            NL_RenderCaller);
-  set_custom_hook(app, HookID_WholeScreenRenderCaller, NL_WholeScreenRenderCaller);
+  set_custom_hook(app, HookID_WholeScreenRenderCaller, NL_WholeScreenRenderCaller);*/
+  
+  set_custom_hook(app, HookID_RenderCaller,            F4_Render);
+  set_custom_hook(app, HookID_BeginBuffer,             F4_BeginBuffer);
+  set_custom_hook(app, HookID_Layout,                  F4_Layout);
+  set_custom_hook(app, HookID_WholeScreenRenderCaller, F4_WholeScreenRender);
+  set_custom_hook(app, HookID_DeltaRule,               F4_DeltaRule);
+  set_custom_hook(app, HookID_BufferEditRange,         F4_BufferEditRange);
+  
+  set_custom_hook_memory_size(app, HookID_DeltaRule, delta_ctx_size(sizeof(Vec2_f32)));
 }
 
 BUFFER_HOOK_SIG(NL_BeginBuffer) {
@@ -48,16 +58,40 @@ BUFFER_HOOK_SIG(NL_BeginBuffer) {
   Scratch_Block scratch(app);
   b32 treat_as_code = false;
   String_Const_u8 file_name = push_buffer_file_name(app, scratch, buffer_id);
+  String_Const_u8 buffer_name = push_buffer_base_name(app, scratch, buffer_id);
   
-  if(file_name.size > 0) {
-    String_Const_u8_Array extensions = global_config.code_exts;
-    String_Const_u8 ext = string_file_extension(file_name);
-    
-    for(i32 i = 0; i < extensions.count; ++i) {
-      if(string_match(ext, extensions.strings[i])) {
-        treat_as_code = true;
-        break;
+  if (treat_as_code == false) {
+    if(file_name.size > 0) {
+      String_Const_u8 treat_as_code_string = def_get_config_string(scratch, vars_save_string_lit("treat_as_code"));
+      String_Const_u8_Array extensions = parse_extension_line_to_extension_list(app, scratch, treat_as_code_string);
+      String_Const_u8 ext = string_file_extension(file_name);
+      
+      for(i32 i = 0; i < extensions.count; ++i) {
+        if(string_match(ext, extensions.strings[i])) {
+          treat_as_code = true;
+          break;
+        }
       }
+    }
+  }
+  
+  // NOTE(Nghia Lam): Treat as code for *calc* and *peek* buffers.
+  if(treat_as_code == false) {
+    if(buffer_name.size > 0) {
+      if(string_match(buffer_name, string_u8_litexpr("*calc*"))) {
+        treat_as_code = true;
+      }
+      else if(string_match(buffer_name, string_u8_litexpr("*peek*"))) {
+        treat_as_code = true;
+      }
+    }
+  }
+  
+  // NOTE(Nghia Lam): Treat as code if we've identified the language of a file.
+  if(treat_as_code == false) {
+    F4_Language *language = F4_LanguageFromBuffer(app, buffer_id);
+    if(language) {
+      treat_as_code = true;
     }
   }
   
@@ -74,16 +108,19 @@ BUFFER_HOOK_SIG(NL_BeginBuffer) {
   b32 wrap_lines = true;
   b32 use_lexer = false;
   if (treat_as_code) {
-    wrap_lines = global_config.enable_code_wrapping;
+    wrap_lines = def_get_config_b32(vars_save_string_lit("enable_code_wrapping"));
     use_lexer  = true;
   }
+  if(string_match(buffer_name, string_u8_litexpr("*compilation*"))) {
+    wrap_lines = false;
+  }
   
-  String_Const_u8 buffer_name = push_buffer_base_name(app, scratch, buffer_id);
+  /*String_Const_u8 buffer_name = push_buffer_base_name(app, scratch, buffer_id);
   if (buffer_name.size > 0 && 
       buffer_name.str[0] == '*' && 
       buffer_name.str[buffer_name.size - 1] == '*') {
     wrap_lines = global_config.enable_output_wrapping;
-  }
+  }*/
   
   if (use_lexer) {
     ProfileBlock(app, "begin buffer kick off lexer");
@@ -111,10 +148,18 @@ BUFFER_HOOK_SIG(NL_BeginBuffer) {
 }
 
 function void NL_Tick(Application_Links *app, Frame_Info frame_info) {
+  // NOTE(Nghia Lam): Setup from fleury layers 
+  linalloc_clear(&global_frame_arena);
+  global_tooltip_count = 0;
+  
+  F4_TickColors(app, frame_info);
+  F4_Index_Tick(app);
+  F4_CLC_Tick(frame_info);
+  F4_PowerMode_Tick(app, frame_info);
+  F4_UpdateFlashes(app, frame_info);
+  
   // Default tick stuffs from Allen
   default_tick(app, frame_info);
-  
-  // TODO(Nghia Lam): My tick function here
 }
 
 function void NL_RenderCaller(Application_Links *app, 
@@ -187,9 +232,10 @@ function void NL_RenderCaller(Application_Links *app,
   
   // NOTE(Nghia Lam): Layout line number
   Rect_f32 line_number_rect = {};
-  if (global_config.show_line_number_margins){
+  if (def_get_config_b32(vars_save_string_lit("show_line_number_margins"))){
     Rect_f32_Pair pair  = layout_line_number_margin(app, buffer, region, digit_advance);
     line_number_rect    = pair.min;
+    line_number_rect.x1 += 4;
     region = pair.max;
   }
   
@@ -198,7 +244,7 @@ function void NL_RenderCaller(Application_Links *app,
   Text_Layout_ID text_layout_id = text_layout_create(app, buffer, region, buffer_point);
   
   // NOTE(Nghia Lam): Render line numbers
-  if (global_config.show_line_number_margins){
+  if (def_get_config_b32(vars_save_string_lit("show_line_number_margins"))){
     draw_line_number_margin(app, view_id, buffer, face_id, text_layout_id, line_number_rect);
   }
   
@@ -227,6 +273,7 @@ function void NL_RenderBuffer(Application_Links *app,
                               Text_Layout_ID text_layout_id,
                               Rect_f32 rect,
                               Frame_Info frame_info) {
+  Scratch_Block scratch(app);
   ProfileScope(app, "[NghiaLam] Render Buffer");
   
   View_ID active_view = get_active_view(app, Access_Always);
@@ -240,20 +287,13 @@ function void NL_RenderBuffer(Application_Links *app,
     NL_DrawCppTokenColors(app, text_layout_id, &token_array);
     
     // NOTE(Nghia Lam): Scan for TODOs, NOTEs and user name
-    if (global_config.use_comment_keyword){
-      char user_string_buf[256] = {0};
-      String_Const_u8 user_string = {0};
+    b32 use_comment_keywords = def_get_config_b32(vars_save_string_lit("use_comment_keywords"));
+    if (use_comment_keywords) {
+      Comment_Highlight_Pair pairs[] =
       {
-        user_string.data = user_string_buf;
-        user_string.size = snprintf(user_string_buf, 
-                                    sizeof(user_string_buf), 
-                                    "(%.*s)",
-                                    string_expand(global_config.user_name));
-      }
-      Comment_Highlight_Pair pairs[] = {
-        {string_u8_litexpr("NOTE"), finalize_color(defcolor_comment_pop, 0)},
-        {string_u8_litexpr("TODO"), finalize_color(defcolor_comment_pop, 1)},
-        {user_string, 0xffffdd23}, // TODO(Nghia Lam): Use from config file for this color.
+        {str8_lit("NOTE"), finalize_color(defcolor_comment_pop, 0)},
+        {str8_lit("TODO"), finalize_color(defcolor_comment_pop, 1)},
+        {def_get_config_string(scratch, vars_save_string_lit("user_name")), finalize_color(fleury_color_comment_user_name, 0)},
       };
       draw_comment_highlights(app, buffer, text_layout_id, &token_array, pairs, ArrayCount(pairs));
     }
@@ -267,7 +307,8 @@ function void NL_RenderBuffer(Application_Links *app,
   view_correct_mark(app, view_id);
   
   // NOTE(Allen): Scope highlight
-  if(global_config.use_scope_highlight) {
+  b32 use_scope_highlight = def_get_config_b32(vars_save_string_lit("use_scope_highlight"));
+  if(use_scope_highlight) {
     Color_Array colors = finalize_color_array(defcolor_back_cycle);
     draw_scope_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
   }
@@ -286,50 +327,54 @@ function void NL_RenderBuffer(Application_Links *app,
                           sizeof(colors)/sizeof(colors[0]));
   }
   
-  if (global_config.use_error_highlight || global_config.use_jump_highlight) {
-    // NOTE(Allen): Error highlight
+  // NOTE(allen): Line highlight
+  {
+    b32 highlight_line_at_cursor = def_get_config_b32(vars_save_string_lit("highlight_line_at_cursor"));
     String_Const_u8 name = string_u8_litexpr("*compilation*");
     Buffer_ID compilation_buffer = get_buffer_by_name(app, name, Access_Always);
-    if (global_config.use_error_highlight) {
-      draw_jump_highlights(app,
-                           buffer,
-                           text_layout_id,
-                           compilation_buffer,
-                           fcolor_id(defcolor_highlight_junk));
+    if(highlight_line_at_cursor && (is_active_view || buffer == compilation_buffer))
+    {
+      i64 line_number = get_line_number_from_pos(app, buffer, cursor_pos);
+      draw_line_highlight(app, text_layout_id, line_number,
+                          fcolor_id(defcolor_highlight_cursor_line));
     }
-    
-    // NOTE(Allen): Search highlight
-    if (global_config.use_jump_highlight) {
-      Buffer_ID jump_buffer = get_locked_jump_buffer(app);
-      if (jump_buffer != compilation_buffer) {
-        draw_jump_highlights(app,
-                             buffer,
-                             text_layout_id,
-                             jump_buffer, 
-                             fcolor_id(defcolor_highlight_white));
+  }
+  
+  // NOTE(rjf): Error/Search Highlight
+  {
+    b32 use_error_highlight = def_get_config_b32(vars_save_string_lit("use_error_highlight"));
+    b32 use_jump_highlight = def_get_config_b32(vars_save_string_lit("use_jump_highlight"));
+    if (use_error_highlight || use_jump_highlight){
+      // NOTE(allen): Error highlight
+      String_Const_u8 name = string_u8_litexpr("*compilation*");
+      Buffer_ID compilation_buffer = get_buffer_by_name(app, name, Access_Always);
+      if (use_error_highlight){
+        draw_jump_highlights(app, buffer, text_layout_id, compilation_buffer,
+                             fcolor_id(defcolor_highlight_junk));
+      }
+      
+      // NOTE(allen): Search highlight
+      if (use_jump_highlight){
+        Buffer_ID jump_buffer = get_locked_jump_buffer(app);
+        if (jump_buffer != compilation_buffer){
+          draw_jump_highlights(app, buffer, text_layout_id, jump_buffer,
+                               fcolor_id(defcolor_highlight_white));
+        }
       }
     }
   }
   
-  // NOTE(Allen): Line highlight
-  if (global_config.highlight_line_at_cursor && is_active_view){
-    i64 line_number = get_line_number_from_pos(app, buffer, cursor_pos);
-    draw_line_highlight(app,
-                        text_layout_id,
-                        line_number,
-                        fcolor_id(defcolor_highlight_cursor_line));
-  }
-  
   // NOTE(Allen): Color parens
-  if (global_config.use_paren_helper) {
+  if(def_get_config_b32(vars_save_string_lit("use_paren_helper"))){
     Color_Array colors = finalize_color_array(defcolor_text_cycle);
     draw_paren_highlight(app, buffer, text_layout_id, cursor_pos, colors.vals, colors.count);
   }
   
   // NOTE(Nghia Lam): Cursor
   Face_Metrics metrics = get_face_metrics(app, face_id);
-  f32 cursor_roundness = metrics.normal_advance * global_config.cursor_roundness;
-  f32 mark_thickness   = (f32) global_config.mark_thickness;
+  u64 cursor_roundness_100 = def_get_config_u64(app, vars_save_string_lit("cursor_roundness"));
+  f32 cursor_roundness = metrics.normal_advance*cursor_roundness_100*0.01f;
+  f32 mark_thickness = (f32) def_get_config_u64(app, vars_save_string_lit("mark_thickness"));
   
   switch (fcoder_mode) {
     case FCoderMode_Original: {

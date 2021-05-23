@@ -99,9 +99,9 @@ CUSTOM_DOC("NghiaLam's custom layer startup event") {
     default_4coder_initialize(app, file_names);
     default_4coder_side_by_side_panels(app, file_names);
     
-    if (global_config.automatically_load_project) {
-      load_project(app);
-    }
+    /*if (global_config.automatically_load_project) {
+    load_project(app);
+    }*/
     
     // Custom startup
     toggle_fullscreen(app);

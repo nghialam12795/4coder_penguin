@@ -16,14 +16,14 @@ use_scroll_bars = false;
 use_file_bars = true;
 use_error_highlight = true;
 use_jump_highlight = true;
-use_scope_highlight = false;
+use_scope_highlight = true;
 use_paren_helper = true;
 use_comment_keywords = true;
 lister_whole_word_backspace_when_modified = false;
 show_line_number_margins = false;
 enable_output_wrapping = false;
 
-enable_undo_fade_out = true;
+enable_undo_fade_out = false;
 
 // cursor_roundess is a value [0,50] setting the radius of
 // the cursor and mark's roundness as a percentage of their width
@@ -40,7 +40,7 @@ mark_thickness = 2;
 lister_roundness = 5;
 
 // Code Wrapping
-treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm.4coder";
+treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm.ds.md.4coder.jai.vert.frag";
 enable_virtual_whitespace = true;
 virtual_whitespace_regular_indent = 2;
 enable_code_wrapping = false;
@@ -61,13 +61,13 @@ indent_width = 2;
 default_tab_width = 2;
 
 // Theme
-default_theme_name = "theme-handmade-hero";
+default_theme_name = "theme-fleury";
 highlight_line_at_cursor = true;
 
 // Font
-default_font_name = "Fixedsys_Excelsior_Regular.ttf";
-default_font_size = 17;
-default_font_hinting = false;
+default_font_name = "liberation-mono.ttf";
+default_font_size = 14;
+default_font_hinting = true;
 
 // User
 user_name = "Nghia Lam";
