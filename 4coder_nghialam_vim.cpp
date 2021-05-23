@@ -26,18 +26,6 @@
 #if !defined(FCODER_NGHIALAM_VIM)
 #define FCODER_NGHIALAM_VIM
 
-//~ NOTE(Nghia Lam): Vim Setup
-
-CUSTOM_ID(command_map, vim_mapid_normal);
-CUSTOM_ID(command_map, vim_mapid_visual);
-CUSTOM_ID(command_map, vim_mapid_yank);
-CUSTOM_ID(command_map, vim_mapid_goto);
-CUSTOM_ID(command_map, vim_mapid_view);
-CUSTOM_ID(command_map, vim_mapid_delete);
-CUSTOM_ID(command_map, vim_mapid_leader);
-CUSTOM_ID(command_map, vim_mapid_leader_buffer);
-CUSTOM_ID(command_map, vim_mapid_leader_window);
-
 
 //~ NOTE(Nghia Lam): Type definitions and structures
 enum VIMMODE {
@@ -89,6 +77,16 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
   }
   
   String_ID code_map_id = vars_save_string_lit("keys_code");
+  
+  String_ID vim_mapid_normal = vars_save_string_lit("keys_vim_normal");
+  String_ID vim_mapid_visual = vars_save_string_lit("keys_vim_visual");
+  String_ID vim_mapid_yank = vars_save_string_lit("keys_vim_yank");
+  String_ID vim_mapid_goto = vars_save_string_lit("keys_goto");
+  String_ID vim_mapid_view = vars_save_string_lit("keys_vim_view");
+  String_ID vim_mapid_delete = vars_save_string_lit("keys_vim_delete");
+  String_ID vim_mapid_leader = vars_save_string_lit("keys_vim_leader");
+  String_ID vim_mapid_leader_buffer = vars_save_string_lit("keys_vim_leader_buffer");
+  String_ID vim_mapid_leader_window = vars_save_string_lit("keys_vim_leader_window");
   
   global_vim_mode = mode;
   

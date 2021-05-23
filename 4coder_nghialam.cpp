@@ -18,7 +18,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==========================================================================
@@ -109,10 +109,8 @@ typedef int socklen_t;
 #include "4coder_nghialam/4coder_nghialam_commands.cpp"
 #include "4coder_nghialam/4coder_nghialam_bindings.cpp"
 
-
 //~ NOTE(Nghia Lam): 4coder Stuff
 #include "generated/managed_id_metadata.cpp"
-
 
 //~ TODO(Nghia Lam): Create my custom layer
 //  - [ ] VI Model Editing System ??
@@ -122,7 +120,8 @@ typedef int socklen_t;
 //  - [ ] Project todo list
 
 //~ NOTE(Nghia Lam): Entry Point here
-void custom_layer_init(Application_Links *app) {
+void custom_layer_init(Application_Links *app)
+{
   // NOTE(Allen): Default Setups
   default_framework_init(app);
   global_frame_arena = make_arena(get_base_allocator_system());
@@ -133,19 +132,18 @@ void custom_layer_init(Application_Links *app) {
   NL_SetupCustomHooks(app);
   
   // Set up mapping.
+  Thread_Context *tctx = get_thread_context(app);
+  mapping_init(tctx, &framework_mapping);
+  String_Const_u8 bindings_file = string_u8_litexpr("bindings.4coder");
+  F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
+  if (!dynamic_binding_load_from_file(app, &framework_mapping, bindings_file))
   {
-    Thread_Context *tctx = get_thread_context(app);
-    mapping_init(tctx, &framework_mapping);
-    String_Const_u8 bindings_file = string_u8_litexpr("bindings.4coder");
-    F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
-    if(!dynamic_binding_load_from_file(app, &framework_mapping, bindings_file))
-    {
-      F4_SetDefaultBindings(&framework_mapping);
-    }
-    F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
+    F4_SetDefaultBindings(&framework_mapping);
   }
+  F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
   
-  NL_SetupVimBindings(&framework_mapping);
+  String_ID global_map_id = vars_save_string_lit("keys_global");
+  NL_SetupVimBindings(&framework_mapping, global_map_id);
   
   // NOTE(rjf): Set up custom code index.
   {
@@ -158,8 +156,6 @@ void custom_layer_init(Application_Links *app) {
   }
 }
 
-
-
 //~ NOTE(rjf): @f4_startup Whenever 4coder's core is ready for the custom layer to start up,
 // this is called.
 
@@ -171,7 +167,7 @@ IsFileReadable(String_Const_u8 path)
 {
   b32 result = 0;
   FILE *file = fopen((char *)path.str, "r");
-  if(file)
+  if (file)
   {
     result = 1;
     fclose(file);
@@ -185,7 +181,7 @@ CUSTOM_DOC("Fleury startup event")
   ProfileScope(app, "default startup");
   
   User_Input input = get_current_input(app);
-  if(!match_core_code(&input, CoreCode_Startup))
+  if (!match_core_code(&input, CoreCode_Startup))
   {
     return;
   }
@@ -243,7 +239,7 @@ CUSTOM_DOC("Fleury startup event")
   //~ NOTE(rjf): Initialize panels
   {
     Buffer_Identifier comp = buffer_identifier(string_u8_litexpr("*compilation*"));
-    Buffer_Identifier left  = buffer_identifier(string_u8_litexpr("*calc*"));
+    Buffer_Identifier left = buffer_identifier(string_u8_litexpr("*calc*"));
     Buffer_Identifier right = buffer_identifier(string_u8_litexpr("*messages*"));
     Buffer_ID comp_id = buffer_identifier_to_id(app, comp);
     Buffer_ID left_id = buffer_identifier_to_id(app, left);
@@ -262,7 +258,7 @@ CUSTOM_DOC("Fleury startup event")
       Buffer_ID buffer = view_get_buffer(app, compilation_view, Access_Always);
       Face_ID face_id = get_face_id(app, buffer);
       Face_Metrics metrics = get_face_metrics(app, face_id);
-      view_set_split_pixel_size(app, compilation_view, (i32)(metrics.line_height*4.f));
+      view_set_split_pixel_size(app, compilation_view, (i32)(metrics.line_height * 4.f));
       view_set_passive(app, compilation_view, true);
       global_compilation_view = compilation_view;
       view_set_buffer(app, compilation_view, comp_id, 0);
@@ -303,7 +299,7 @@ CUSTOM_DOC("Fleury startup event")
   {
     String_Const_u8 bindings_file = string_u8_litexpr("bindings.4coder");
     F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
-    if(!dynamic_binding_load_from_file(app, &framework_mapping, bindings_file))
+    if (!dynamic_binding_load_from_file(app, &framework_mapping, bindings_file))
     {
       F4_SetDefaultBindings(&framework_mapping);
     }
@@ -322,14 +318,14 @@ CUSTOM_DOC("Fleury startup event")
     {
       Face_Description desc = {0};
       {
-        desc.font.file_name =  push_u8_stringf(scratch, "%.*sfonts/RobotoCondensed-Regular.ttf", string_expand(bin_path));
+        desc.font.file_name = push_u8_stringf(scratch, "%.*sfonts/RobotoCondensed-Regular.ttf", string_expand(bin_path));
         desc.parameters.pt_size = 18;
         desc.parameters.bold = 0;
         desc.parameters.italic = 0;
         desc.parameters.hinting = 0;
       }
       
-      if(IsFileReadable(desc.font.file_name))
+      if (IsFileReadable(desc.font.file_name))
       {
         global_styled_title_face = try_create_new_face(app, &desc);
       }
@@ -343,14 +339,14 @@ CUSTOM_DOC("Fleury startup event")
     {
       Face_Description desc = {0};
       {
-        desc.font.file_name =  push_u8_stringf(scratch, "%.*sfonts/RobotoCondensed-Regular.ttf", string_expand(bin_path));
+        desc.font.file_name = push_u8_stringf(scratch, "%.*sfonts/RobotoCondensed-Regular.ttf", string_expand(bin_path));
         desc.parameters.pt_size = 10;
         desc.parameters.bold = 1;
         desc.parameters.italic = 1;
         desc.parameters.hinting = 0;
       }
       
-      if(IsFileReadable(desc.font.file_name))
+      if (IsFileReadable(desc.font.file_name))
       {
         global_styled_label_face = try_create_new_face(app, &desc);
       }
@@ -366,14 +362,14 @@ CUSTOM_DOC("Fleury startup event")
       
       Face_Description desc = {0};
       {
-        desc.font.file_name =  push_u8_stringf(scratch, "%.*sfonts/Inconsolata-Regular.ttf", string_expand(bin_path));
+        desc.font.file_name = push_u8_stringf(scratch, "%.*sfonts/Inconsolata-Regular.ttf", string_expand(bin_path));
         desc.parameters.pt_size = normal_code_desc.parameters.pt_size - 1;
         desc.parameters.bold = 1;
         desc.parameters.italic = 1;
         desc.parameters.hinting = 0;
       }
       
-      if(IsFileReadable(desc.font.file_name))
+      if (IsFileReadable(desc.font.file_name))
       {
         global_small_code_face = try_create_new_face(app, &desc);
       }
