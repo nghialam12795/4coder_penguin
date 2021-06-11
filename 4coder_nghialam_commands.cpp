@@ -27,63 +27,64 @@
 #define FCODER_NGHIALAM_COMMAND
 
 //~ NOTE(Nghia Lam): Main APIs
-CUSTOM_COMMAND_SIG(nghialam_startup);               // Custom layer startup.
-CUSTOM_COMMAND_SIG(toggle_battery_saver);           // Change between batter saver mode <-> normal mode.
-CUSTOM_COMMAND_SIG(toggle_filebar_position);        // Change filebar on top <-> bottom position.
+CUSTOM_COMMAND_SIG(nghialam_startup);                // Custom layer startup.
+CUSTOM_COMMAND_SIG(toggle_battery_saver);            // Change between batter saver mode <-> normal mode.
+CUSTOM_COMMAND_SIG(toggle_filebar_position);         // Change filebar on top <-> bottom position.
 
-CUSTOM_COMMAND_SIG(vim_motion_left);                // Move cursor left in normal mode.
-CUSTOM_COMMAND_SIG(vim_motion_down);                // Move cursor down in normal mode.
-CUSTOM_COMMAND_SIG(vim_motion_up);                  // Move cursor up in normal mode.
-CUSTOM_COMMAND_SIG(vim_motion_right);               // Move cursor right in normal mode.
-CUSTOM_COMMAND_SIG(vim_motion_word);                // Move cursor to the beginning of next word.
-CUSTOM_COMMAND_SIG(vim_motion_word_end);            // Move cursor to the end of next word.
-CUSTOM_COMMAND_SIG(vim_motion_word_backward);       // Move cursor to the beginning of previous word.
-CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_up);    // Move cursor to the nearest blank line up.
-CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_down);  // Move cursor to the nearest blank line down.
-CUSTOM_COMMAND_SIG(vim_motion_to_begin_of_file);    // Move cursor to the beginning of the file.
-CUSTOM_COMMAND_SIG(vim_motion_to_end_of_file);      // Move cursor to the end of the file.
-CUSTOM_COMMAND_SIG(vim_jump_to_defition_at_cursor); // Jump to the definition of the identifier at cursor. 
-CUSTOM_COMMAND_SIG(vim_start_mouse_select);         // Vim behavior when using mouse left button.
-CUSTOM_COMMAND_SIG(vim_write_text_input);           // Vim writing text to files.
-CUSTOM_COMMAND_SIG(vim_write_text_and_auto_indent); // Vim writing text to files with indentation.
-CUSTOM_COMMAND_SIG(vim_new_line_below);             // Open a new line below and enter insert mode.
-CUSTOM_COMMAND_SIG(vim_new_line_above);             // Open a new line above and enter insert mode.
-CUSTOM_COMMAND_SIG(vim_enter_normal_mode);          // Change to Vim-Editor type Normal Mode.
-CUSTOM_COMMAND_SIG(vim_enter_append_mode);          // Change to Vim-Editor type Append Mode.
-CUSTOM_COMMAND_SIG(vim_enter_insert_mode);          // Change to Vim-Editor type Insert Mode.
-CUSTOM_COMMAND_SIG(vim_enter_insert_mode_bol);      // Change to Vim_Editor type Insert Mode at the beginning of line.
-CUSTOM_COMMAND_SIG(vim_enter_insert_mode_eol);      // Change to Vim_Editor type Insert Mode at the end of line.
-CUSTOM_COMMAND_SIG(vim_enter_delete_mode);          // Change to Vim-Editor type Delete Mode.
-CUSTOM_COMMAND_SIG(vim_enter_yank_mode);            // Change to Vim-Editor type Yank Mode.
-CUSTOM_COMMAND_SIG(vim_enter_view_mode);            // Change to Vim-Editor type View Mode.
-CUSTOM_COMMAND_SIG(vim_enter_goto_mode);            // Change to Vim-Editor type Goto Mode.
-CUSTOM_COMMAND_SIG(vim_enter_leader_mode);          // Change to Vim-Editor type Leader Mode.
-CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode);   // Change to Vim-Editor type Leader Buffer Mode.
-CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode);   // Change to Vim-Editor type Leader Window Mode.
+CUSTOM_COMMAND_SIG(vim_motion_left);                 // Move cursor left in normal mode.
+CUSTOM_COMMAND_SIG(vim_motion_down);                 // Move cursor down in normal mode.
+CUSTOM_COMMAND_SIG(vim_motion_up);                   // Move cursor up in normal mode.
+CUSTOM_COMMAND_SIG(vim_motion_right);                // Move cursor right in normal mode.
+CUSTOM_COMMAND_SIG(vim_motion_word);                 // Move cursor to the beginning of next word.
+CUSTOM_COMMAND_SIG(vim_motion_word_end);             // Move cursor to the end of next word.
+CUSTOM_COMMAND_SIG(vim_motion_word_backward);        // Move cursor to the beginning of previous word.
+CUSTOM_COMMAND_SIG(vim_motion_word_backward_end);    // Move cursor to the beginning of previous word.
+CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_up);     // Move cursor to the nearest blank line up.
+CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_down);   // Move cursor to the nearest blank line down.
+CUSTOM_COMMAND_SIG(vim_motion_to_begin_of_file);     // Move cursor to the beginning of the file.
+CUSTOM_COMMAND_SIG(vim_motion_to_end_of_file);       // Move cursor to the end of the file.
+CUSTOM_COMMAND_SIG(vim_jump_to_defition_at_cursor);  // Jump to the definition of the identifier at cursor. 
+CUSTOM_COMMAND_SIG(vim_start_mouse_select);          // Vim behavior when using mouse left button.
+CUSTOM_COMMAND_SIG(vim_write_text_input);            // Vim writing text to files.
+CUSTOM_COMMAND_SIG(vim_write_text_and_auto_indent);  // Vim writing text to files with indentation.
+CUSTOM_COMMAND_SIG(vim_new_line_below);              // Open a new line below and enter insert mode.
+CUSTOM_COMMAND_SIG(vim_new_line_above);              // Open a new line above and enter insert mode.
+CUSTOM_COMMAND_SIG(vim_enter_normal_mode);           // Change to Vim-Editor type Normal Mode.
+CUSTOM_COMMAND_SIG(vim_enter_append_mode);           // Change to Vim-Editor type Append Mode.
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode);           // Change to Vim-Editor type Insert Mode.
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode_bol);       // Change to Vim_Editor type Insert Mode at the beginning of line.
+CUSTOM_COMMAND_SIG(vim_enter_insert_mode_eol);       // Change to Vim_Editor type Insert Mode at the end of line.
+CUSTOM_COMMAND_SIG(vim_enter_delete_mode);           // Change to Vim-Editor type Delete Mode.
+CUSTOM_COMMAND_SIG(vim_enter_yank_mode);             // Change to Vim-Editor type Yank Mode.
+CUSTOM_COMMAND_SIG(vim_enter_view_mode);             // Change to Vim-Editor type View Mode.
+CUSTOM_COMMAND_SIG(vim_enter_goto_mode);             // Change to Vim-Editor type Goto Mode.
+CUSTOM_COMMAND_SIG(vim_enter_leader_mode);           // Change to Vim-Editor type Leader Mode.
+CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode);    // Change to Vim-Editor type Leader Buffer Mode.
+CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode);    // Change to Vim-Editor type Leader Window Mode.
 
-CUSTOM_COMMAND_SIG(vim_yank_line);                  // Copy whole line and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_yank_line);                   // Copy whole line and enter normal mode.
 
-CUSTOM_COMMAND_SIG(vim_view_center);                // Center the view and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_view_center);                 // Center the view and enter normal mode.
 
-CUSTOM_COMMAND_SIG(vim_delete_line);                // Delete whole line and enter normal mode.
-CUSTOM_COMMAND_SIG(vim_delete_up);                  // Delete line up and enter normal mode.
-CUSTOM_COMMAND_SIG(vim_delete_down);                // Delete line down and enter normal mode.
-CUSTOM_COMMAND_SIG(vim_delete_word_end);            // Delete till the end of word and enter normal mode.
-CUSTOM_COMMAND_SIG(vim_delete_word_backward);       // Delete to the beginning of word and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_line);                 // Delete whole line and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_up);                   // Delete line up and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_down);                 // Delete line down and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_word_end);             // Delete till the end of word and enter normal mode.
+CUSTOM_COMMAND_SIG(vim_delete_word_backward);        // Delete to the beginning of word and enter normal mode.
 
-CUSTOM_COMMAND_SIG(vim_window_vsplit);              // Window vertical split.
-CUSTOM_COMMAND_SIG(vim_window_hsplit);              // Window horizontal split.
-CUSTOM_COMMAND_SIG(vim_window_panel_move_up);       // Move up from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_move_down);     // Move down from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_move_left);     // Move left from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_move_right);    // Move right from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_swap_up);       // Swap the buffer up from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_swap_down);     // Swap the buffer down from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_swap_left);     // Swap the buffer left from the active view.
-CUSTOM_COMMAND_SIG(vim_window_panel_swap_right);    // Swap the buffer right from the active view.
+CUSTOM_COMMAND_SIG(vim_window_vsplit);               // Window vertical split.
+CUSTOM_COMMAND_SIG(vim_window_hsplit);               // Window horizontal split.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_up);        // Move up from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_down);      // Move down from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_left);      // Move left from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_move_right);     // Move right from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_up);        // Swap the buffer up from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_down);      // Swap the buffer down from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_left);      // Swap the buffer left from the active view.
+CUSTOM_COMMAND_SIG(vim_window_panel_swap_right);     // Swap the buffer right from the active view.
 
-CUSTOM_COMMAND_SIG(vim_buffer_save);                // Save buffer then enter normal mode
-CUSTOM_COMMAND_SIG(vim_buffer_kill);                // Kill buffer then enter normal mode
+CUSTOM_COMMAND_SIG(vim_buffer_save);                 // Save buffer then enter normal mode
+CUSTOM_COMMAND_SIG(vim_buffer_kill);                 // Kill buffer then enter normal mode
 
 //~ NOTE(Nghia Lam): My Implementation
 CUSTOM_COMMAND_SIG(nghialam_startup)
@@ -330,10 +331,10 @@ CUSTOM_DOC("[vim] Inserts text and auto-indents the line on which the cursor sit
 
 CUSTOM_COMMAND_SIG(vim_write_text_input)
 CUSTOM_DOC("[vim] Inserts whatever text was used to trigger this command.") {
-  User_Input in = get_current_input(app);
+  User_Input in          = get_current_input(app);
   String_Const_u8 insert = to_writable(&in);
   
-  if (sizeof(VIM_ESCAPE_SEQUENCE) >= 3) {
+  if (sizeof(VIM_ESCAPE_SEQUENCE) >= 2) {
     u8 this_char         = insert.size > 0 ? insert.str[0] : 0;
     u8 prev_char         = global_vim_prev_char;
     global_vim_prev_char = this_char;
@@ -381,13 +382,19 @@ CUSTOM_DOC("[vim] Move cursor to the beginning of next word.") {
 
 CUSTOM_COMMAND_SIG(vim_motion_word_end) 
 CUSTOM_DOC("[vim]  Move cursor to the end of next word.") {
-  move_right_alpha_numeric_boundary(app);
+  f4_move_right_token_boundary(app);
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_word_backward)
 CUSTOM_DOC("[vim] Move cursor to the beginning of previous word.") {
   move_left_alpha_numeric_boundary(app);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_motion_word_backward_end)
+CUSTOM_DOC("[vim] Move cursor to the beginning of previous word.") {
+  f4_move_left_token_boundary(app);
   set_mark(app);
 }
 
@@ -421,7 +428,7 @@ CUSTOM_COMMAND_SIG(vim_jump_to_defition_at_cursor)
 CUSTOM_DOC("[vim] Jump to the definition of the identifier at cursor.") {
   set_mark(app);
   NL_VimEnterMode(app, VIMMODE_NORMAL);
-  jump_to_definition_at_cursor(app);
+  f4_go_to_definition_same_panel(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_new_line_below)

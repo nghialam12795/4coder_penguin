@@ -24,7 +24,6 @@
 // ==========================================================================
 
 //~ NOTE(Nghia Lam): For DION team docs server stuff.
-// {
 #if OS_WINDOWS
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
@@ -32,7 +31,6 @@
 typedef int socklen_t;
 #pragma comment(lib, "Ws2_32.lib")
 #endif
-// }
 
 //~ NOTE(Nghia Lam): Macros and pragmase stuff that have to be put here for various
 // reasons
@@ -120,8 +118,7 @@ typedef int socklen_t;
 //  - [ ] Project todo list
 
 //~ NOTE(Nghia Lam): Entry Point here
-void custom_layer_init(Application_Links *app)
-{
+void custom_layer_init(Application_Links *app) {
   // NOTE(Allen): Default Setups
   default_framework_init(app);
   global_frame_arena = make_arena(get_base_allocator_system());
@@ -134,15 +131,14 @@ void custom_layer_init(Application_Links *app)
   // Set up mapping.
   Thread_Context *tctx = get_thread_context(app);
   mapping_init(tctx, &framework_mapping);
-  String_Const_u8 bindings_file = string_u8_litexpr("bindings.4coder");
-  F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
-  if (!dynamic_binding_load_from_file(app, &framework_mapping, bindings_file))
-  {
-    F4_SetDefaultBindings(&framework_mapping);
-  }
-  F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
   
   String_ID global_map_id = vars_save_string_lit("keys_global");
+  String_ID file_map_id = vars_save_string_lit("keys_file");
+  String_ID code_map_id = vars_save_string_lit("keys_code");
+  
+  NL_SetupNecessaryBindings(&framework_mapping);
+  NL_SetupDefaultBindings(&framework_mapping, global_map_id, file_map_id, code_map_id);
+  NL_SetupNecessaryBindings(&framework_mapping);
   NL_SetupVimBindings(&framework_mapping, global_map_id);
   
   // NOTE(rjf): Set up custom code index.
@@ -162,9 +158,7 @@ void custom_layer_init(Application_Links *app)
 // TODO(rjf): This is only being used to check if a font file exists because
 // there's a bug in try_create_new_face that crashes the program if a font is
 // not found. This function is only necessary until that is fixed.
-function b32
-IsFileReadable(String_Const_u8 path)
-{
+function b32 IsFileReadable(String_Const_u8 path) {
   b32 result = 0;
   FILE *file = fopen((char *)path.str, "r");
   if (file)
@@ -241,7 +235,7 @@ CUSTOM_DOC("Fleury startup event")
     Buffer_Identifier comp = buffer_identifier(string_u8_litexpr("*compilation*"));
     Buffer_Identifier left = buffer_identifier(string_u8_litexpr("*calc*"));
     Buffer_Identifier right = buffer_identifier(string_u8_litexpr("*messages*"));
-    Buffer_ID comp_id = buffer_identifier_to_id(app, comp);
+    //Buffer_ID comp_id = buffer_identifier_to_id(app, comp);
     Buffer_ID left_id = buffer_identifier_to_id(app, left);
     Buffer_ID right_id = buffer_identifier_to_id(app, right);
     
@@ -251,7 +245,7 @@ CUSTOM_DOC("Fleury startup event")
     view_set_buffer(app, view, left_id, 0);
     
     // NOTE(rjf): Bottom panel
-    View_ID compilation_view = 0;
+    /*View_ID compilation_view = 0;
     {
       compilation_view = open_view(app, view, ViewSplit_Bottom);
       new_view_settings(app, compilation_view);
@@ -263,7 +257,7 @@ CUSTOM_DOC("Fleury startup event")
       global_compilation_view = compilation_view;
       view_set_buffer(app, compilation_view, comp_id, 0);
     }
-    
+    */
     view_set_active(app, view);
     
     // NOTE(rjf): Right Panel
@@ -296,7 +290,7 @@ CUSTOM_DOC("Fleury startup event")
   }
   
   //~ NOTE(rjf): Initialize bindings.
-  {
+  /*{
     String_Const_u8 bindings_file = string_u8_litexpr("bindings.4coder");
     F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
     if (!dynamic_binding_load_from_file(app, &framework_mapping, bindings_file))
@@ -304,7 +298,7 @@ CUSTOM_DOC("Fleury startup event")
       F4_SetDefaultBindings(&framework_mapping);
     }
     F4_SetAbsolutelyNecessaryBindings(&framework_mapping);
-  }
+  }*/
   
   //~ NOTE(rjf): Initialize stylish fonts.
   {
@@ -369,12 +363,10 @@ CUSTOM_DOC("Fleury startup event")
         desc.parameters.hinting = 0;
       }
       
-      if (IsFileReadable(desc.font.file_name))
-      {
+      if (IsFileReadable(desc.font.file_name)) {
         global_small_code_face = try_create_new_face(app, &desc);
       }
-      else
-      {
+      else {
         global_small_code_face = face_that_should_totally_be_there;
       }
     }
