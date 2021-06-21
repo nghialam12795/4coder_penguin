@@ -185,8 +185,7 @@ function void NL_Tick(Application_Links *app, Frame_Info frame_info)
   default_tick(app, frame_info);
 }
 
-function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, View_ID view_id)
-{
+function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, View_ID view_id) {
   F4_RecentFiles_RefreshView(app, view_id);
   
   ProfileScope(app, "[NghiaLam] Render Caller");
@@ -227,13 +226,11 @@ function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, Vie
   Buffer_Scroll scroll = view_get_buffer_scroll(app, view_id);
   Buffer_Point_Delta_Result delta = delta_apply(app, view_id, frame_info.animation_dt, scroll);
   
-  if (!block_match_struct(&scroll.position, &delta.point))
-  {
+  if (!block_match_struct(&scroll.position, &delta.point)) {
     block_copy_struct(&scroll.position, &delta.point);
     view_set_buffer_scroll(app, view_id, scroll, SetBufferScroll_NoCursorChange);
   }
-  if (delta.still_animating)
-  {
+  if (delta.still_animating) {
     animate_in_n_milliseconds(app, 0);
   }
   
@@ -255,8 +252,7 @@ function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, Vie
   }
   
   // NOTE(Nghia Lam): Render fps hub <- Do we really need this??
-  if (show_fps_hud)
-  {
+  if (show_fps_hud) {
     Rect_f32_Pair pair = layout_fps_hud_on_bottom(region, line_height);
     draw_fps_hud(app, frame_info, face_id, pair.max);
     region = pair.min;
@@ -265,8 +261,7 @@ function void NL_RenderCaller(Application_Links *app, Frame_Info frame_info, Vie
   
   // NOTE(Nghia Lam): Layout line number
   Rect_f32 line_number_rect = {};
-  if (def_get_config_b32(vars_save_string_lit("show_line_number_margins")))
-  {
+  if (def_get_config_b32(vars_save_string_lit("show_line_number_margins"))) {
     Rect_f32_Pair pair = layout_line_number_margin(app, buffer, region, digit_advance);
     line_number_rect = pair.min;
     line_number_rect.x1 += 4;
@@ -472,8 +467,7 @@ function void NL_RenderBuffer(Application_Links *app,
           }
         }
         
-        if (!token_it_inc_non_whitespace(&it))
-        {
+        if (!token_it_inc_non_whitespace(&it)) {
           break;
         }
       }
@@ -513,10 +507,8 @@ function void NL_RenderBuffer(Application_Links *app,
   f32 cursor_roundness = metrics.normal_advance * cursor_roundness_100 * 0.01f;
   f32 mark_thickness = (f32)def_get_config_u64(app, vars_save_string_lit("mark_thickness"));
   
-  switch (fcoder_mode)
-  {
-    case FCoderMode_Original:
-    {
+  switch (fcoder_mode) {
+    case FCoderMode_Original: {
       NL_DrawCursorMark(app,
                         view_id,
                         is_active_view,
@@ -525,13 +517,12 @@ function void NL_RenderBuffer(Application_Links *app,
                         cursor_roundness,
                         mark_thickness,
                         frame_info);
+      break;
     }
-    break;
-    case FCoderMode_NotepadLike:
-    {
+    case FCoderMode_NotepadLike: {
       draw_notepad_style_cursor_highlight(app, view_id, buffer, text_layout_id, cursor_roundness);
+      break;
     }
-    break;
   }
   
   // NOTE(Nghia Lam): Divider Comments
@@ -551,8 +542,7 @@ function void NL_RenderBuffer(Application_Links *app,
   
   // NOTE(rjf): Interpret buffer as calc code, if it's the calc buffer.
   Buffer_ID calc_buffer_id = get_buffer_by_name(app, string_u8_litexpr("*calc*"), AccessFlag_Read);
-  if (calc_buffer_id == buffer)
-  {
+  if (calc_buffer_id == buffer) {
     F4_CLC_RenderBuffer(app, buffer, view_id, text_layout_id, frame_info);
   }
   

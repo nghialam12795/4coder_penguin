@@ -45,6 +45,8 @@ CUSTOM_COMMAND_SIG(vim_motion_to_begin_of_file);     // Move cursor to the begin
 CUSTOM_COMMAND_SIG(vim_motion_to_end_of_file);       // Move cursor to the end of the file.
 CUSTOM_COMMAND_SIG(vim_jump_to_defition_at_cursor);  // Jump to the definition of the identifier at cursor. 
 CUSTOM_COMMAND_SIG(vim_start_mouse_select);          // Vim behavior when using mouse left button.
+CUSTOM_COMMAND_SIG(vim_join_line);                   // Vim join the line below to the current line.
+CUSTOM_COMMAND_SIG(vim_open_file_in_quote);          // Vim open the file in the quotation mark.
 CUSTOM_COMMAND_SIG(vim_write_text_input);            // Vim writing text to files.
 CUSTOM_COMMAND_SIG(vim_write_text_and_auto_indent);  // Vim writing text to files with indentation.
 CUSTOM_COMMAND_SIG(vim_new_line_below);              // Open a new line below and enter insert mode.
@@ -55,12 +57,15 @@ CUSTOM_COMMAND_SIG(vim_enter_insert_mode);           // Change to Vim-Editor typ
 CUSTOM_COMMAND_SIG(vim_enter_insert_mode_bol);       // Change to Vim_Editor type Insert Mode at the beginning of line.
 CUSTOM_COMMAND_SIG(vim_enter_insert_mode_eol);       // Change to Vim_Editor type Insert Mode at the end of line.
 CUSTOM_COMMAND_SIG(vim_enter_delete_mode);           // Change to Vim-Editor type Delete Mode.
+CUSTOM_COMMAND_SIG(vim_enter_change_mode);           // Change to Vim-Editor type Change Mode.
 CUSTOM_COMMAND_SIG(vim_enter_yank_mode);             // Change to Vim-Editor type Yank Mode.
 CUSTOM_COMMAND_SIG(vim_enter_view_mode);             // Change to Vim-Editor type View Mode.
 CUSTOM_COMMAND_SIG(vim_enter_goto_mode);             // Change to Vim-Editor type Goto Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_mode);           // Change to Vim-Editor type Leader Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_buffer_mode);    // Change to Vim-Editor type Leader Buffer Mode.
 CUSTOM_COMMAND_SIG(vim_enter_leader_window_mode);    // Change to Vim-Editor type Leader Window Mode.
+CUSTOM_COMMAND_SIG(vim_enter_visual_mode);           // Change to Vim-Editor type Visual Mode.
+CUSTOM_COMMAND_SIG(vim_enter_visual_line_mode);      // Change to Vim-Editor type Visual Line Mode.
 
 CUSTOM_COMMAND_SIG(vim_yank_line);                   // Copy whole line and enter normal mode.
 
@@ -71,6 +76,8 @@ CUSTOM_COMMAND_SIG(vim_delete_up);                   // Delete line up and enter
 CUSTOM_COMMAND_SIG(vim_delete_down);                 // Delete line down and enter normal mode.
 CUSTOM_COMMAND_SIG(vim_delete_word_end);             // Delete till the end of word and enter normal mode.
 CUSTOM_COMMAND_SIG(vim_delete_word_backward);        // Delete to the beginning of word and enter normal mode.
+
+CUSTOM_COMMAND_SIG(vim_change_word_end);             // Delete till the end of word and enter insert mode.
 
 CUSTOM_COMMAND_SIG(vim_window_vsplit);               // Window vertical split.
 CUSTOM_COMMAND_SIG(vim_window_hsplit);               // Window horizontal split.
@@ -85,6 +92,11 @@ CUSTOM_COMMAND_SIG(vim_window_panel_swap_right);     // Swap the buffer right fr
 
 CUSTOM_COMMAND_SIG(vim_buffer_save);                 // Save buffer then enter normal mode
 CUSTOM_COMMAND_SIG(vim_buffer_kill);                 // Kill buffer then enter normal mode
+
+CUSTOM_COMMAND_SIG(vim_visual_cut);                  // Cut the visual range.
+CUSTOM_COMMAND_SIG(vim_visual_copy);                 // Copy the visual range.
+CUSTOM_COMMAND_SIG(vim_visual_delete);               // Delete the visual range.
+CUSTOM_COMMAND_SIG(vim_visual_paste);                // Paste into the visual range.
 
 //~ NOTE(Nghia Lam): My Implementation
 CUSTOM_COMMAND_SIG(nghialam_startup)
@@ -240,6 +252,11 @@ CUSTOM_DOC("[vim] Change to Vim-Editor type Delete Mode.") {
   NL_VimEnterMode(app, VIMMODE_DELETE);
 }
 
+CUSTOM_COMMAND_SIG(vim_enter_change_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Change Mode.") {
+  NL_VimEnterMode(app, VIMMODE_CHANGE);
+}
+
 CUSTOM_COMMAND_SIG(vim_enter_yank_mode)
 CUSTOM_DOC("[vim] Change to Vim-Editor type Yank Mode.") {
   NL_VimEnterMode(app, VIMMODE_YANK);
@@ -270,6 +287,20 @@ CUSTOM_DOC("[vim] Change to Vim-Editor type Leader Window Mode.") {
   NL_VimEnterMode(app, VIMMODE_LEADER_WINDOW);
 }
 
+CUSTOM_COMMAND_SIG(vim_enter_visual_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Visual Mode.") {
+  set_mark(app);
+  NL_VimEnterMode(app, VIMMODE_VISUAL);
+}
+
+CUSTOM_COMMAND_SIG(vim_enter_visual_line_mode)
+CUSTOM_DOC("[vim] Change to Vim-Editor type Visual Line Mode.") {
+  seek_beginning_of_textual_line(app);
+  set_mark(app);
+  seek_end_of_textual_line(app);
+  NL_VimEnterMode(app, VIMMODE_VISUALLINE);
+}
+
 CUSTOM_COMMAND_SIG(vim_start_mouse_select)
 CUSTOM_DOC("[vim] Sets the cursor position and mark to the mouse position and enters normal mode.") {
   View_ID view = get_active_view(app, Access_ReadVisible);
@@ -281,6 +312,18 @@ CUSTOM_DOC("[vim] Sets the cursor position and mark to the mouse position and en
   
   view_set_cursor_and_preferred_x(app, view, seek_pos(pos));
   view_set_mark(app, view, seek_pos(pos));
+}
+
+CUSTOM_COMMAND_SIG(vim_join_line)
+CUSTOM_DOC("[vim] Join the next line to the current line.") {
+  seek_end_of_textual_line(app);
+  delete_char(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_open_file_in_quote)
+CUSTOM_DOC("[vim] Open the file in the quotation mark.") {
+  open_file_in_quotes(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
 }
 
 CUSTOM_COMMAND_SIG(vim_write_text_and_auto_indent)
@@ -353,66 +396,121 @@ CUSTOM_DOC("[vim] Inserts whatever text was used to trigger this command.") {
 CUSTOM_COMMAND_SIG(vim_motion_left)
 CUSTOM_DOC("[vim] Move cursor left in normal mode.") {
   move_left(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_down)
 CUSTOM_DOC("[vim] Move cursor down in normal mode.") {
   move_down(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_up)
 CUSTOM_DOC("[vim] Move cursor up in normal mode.") {
   move_up(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_right)
 CUSTOM_DOC("[vim] Move cursor right in normal mode.") {
   move_right(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_word)
 CUSTOM_DOC("[vim] Move cursor to the beginning of next word.") {
   move_right_alpha_numeric_or_camel_boundary(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_word_end) 
 CUSTOM_DOC("[vim]  Move cursor to the end of next word.") {
   f4_move_right_token_boundary(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_word_backward)
 CUSTOM_DOC("[vim] Move cursor to the beginning of previous word.") {
   move_left_alpha_numeric_boundary(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_word_backward_end)
 CUSTOM_DOC("[vim] Move cursor to the beginning of previous word.") {
   f4_move_left_token_boundary(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_up)
 CUSTOM_DOC("[vim] Move cursor to the nearest blank line up.") {
   move_up_to_blank_line_end(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_to_blank_line_down)
 CUSTOM_DOC("[vim] Move cursor to the nearest blank line down.") {
   move_down_to_blank_line_end(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
 }
 
 CUSTOM_COMMAND_SIG(vim_motion_to_begin_of_file)
 CUSTOM_DOC("[vim] Move cursor to the beginning of the file.") {
   goto_beginning_of_file(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
   NL_VimEnterMode(app, VIMMODE_NORMAL);
 }
@@ -420,6 +518,11 @@ CUSTOM_DOC("[vim] Move cursor to the beginning of the file.") {
 CUSTOM_COMMAND_SIG(vim_motion_to_end_of_file)
 CUSTOM_DOC("[vim] Move cursor to the end of the file.") {
   goto_end_of_file(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
+  if (global_vim_mode == VIMMODE_VISUALLINE) {
+    seek_end_of_textual_line(app);
+    return;
+  }
   set_mark(app);
   NL_VimEnterMode(app, VIMMODE_NORMAL);
 }
@@ -463,6 +566,7 @@ CUSTOM_DOC("[vim] Copy whole line and enter normal mode.") {
 CUSTOM_COMMAND_SIG(vim_view_center)
 CUSTOM_DOC("[vim] Center the view and enter normal mode.") {
   center_view(app);
+  if (global_vim_mode == VIMMODE_VISUAL) return;
   NL_VimEnterMode(app, VIMMODE_NORMAL);
   set_mark(app);
 }
@@ -496,7 +600,9 @@ CUSTOM_DOC("[vim] Delete line down and enter normal mode.") {
 
 CUSTOM_COMMAND_SIG(vim_delete_word_end)
 CUSTOM_DOC("[vim] Delete till the end of word and enter normal mode.") {
-  // TODO(Nghia Lam): Implement this.
+  set_mark(app);
+  f4_move_right_token_boundary(app);
+  delete_range(app);
   NL_VimEnterMode(app, VIMMODE_NORMAL);
   set_mark(app);
 }
@@ -504,6 +610,44 @@ CUSTOM_DOC("[vim] Delete till the end of word and enter normal mode.") {
 CUSTOM_COMMAND_SIG(vim_delete_word_backward)
 CUSTOM_DOC("[vim] Delete to the beginning of word and enter normal mode.") {
   // TODO(Nghia Lam): Implement this.
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_change_word_end)
+CUSTOM_DOC("[vim] Delete till the end of word and enter insert mode.") {
+  set_mark(app);
+  f4_move_right_token_boundary(app);
+  delete_range(app);
+  NL_VimEnterMode(app, VIMMODE_INSERT);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_visual_delete)
+CUSTOM_DOC("[vim] Delete the visual range and enter normal mode.") {
+  delete_range(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_visual_copy)
+CUSTOM_DOC("[vim] Copy the visual range and enter normal mode.") {
+  copy(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_visual_cut)
+CUSTOM_DOC("[vim] Cut the visual range and enter normal mode.") {
+  cut(app);
+  NL_VimEnterMode(app, VIMMODE_NORMAL);
+  set_mark(app);
+}
+
+CUSTOM_COMMAND_SIG(vim_visual_paste)
+CUSTOM_DOC("[vim] Paste into the visual range and enter normal mode.") {
+  delete_range(app);
+  paste_and_indent(app);
   NL_VimEnterMode(app, VIMMODE_NORMAL);
   set_mark(app);
 }

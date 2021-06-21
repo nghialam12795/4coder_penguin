@@ -248,11 +248,12 @@ function void NL_SetupDefaultBindings(Mapping *mapping, i64 global_map_id, i64 f
 function void NL_SetupVimBindings(Mapping *mapping, i64 global_id) {
   
   String_ID vim_mapid_normal = vars_save_string_lit("keys_vim_normal");
-  //String_ID vim_mapid_visual = vars_save_string_lit("keys_vim_visual");
+  String_ID vim_mapid_visual = vars_save_string_lit("keys_vim_visual");
   String_ID vim_mapid_yank = vars_save_string_lit("keys_vim_yank");
   String_ID vim_mapid_goto = vars_save_string_lit("keys_goto");
   String_ID vim_mapid_view = vars_save_string_lit("keys_vim_view");
   String_ID vim_mapid_delete = vars_save_string_lit("keys_vim_delete");
+  String_ID vim_mapid_change = vars_save_string_lit("keys_vim_change");
   String_ID vim_mapid_leader = vars_save_string_lit("keys_vim_leader");
   String_ID vim_mapid_leader_buffer = vars_save_string_lit("keys_vim_leader_buffer");
   String_ID vim_mapid_leader_window = vars_save_string_lit("keys_vim_leader_window");
@@ -280,18 +281,20 @@ function void NL_SetupVimBindings(Mapping *mapping, i64 global_id) {
   Bind(jump_to_last_point,                        KeyCode_O,             KeyCode_Control);
   Bind(if_read_only_goto_position,                KeyCode_Return);
   Bind(if_read_only_goto_position_same_panel,     KeyCode_Return,        KeyCode_Shift);
+  Bind(search_identifier,                         KeyCode_3,             KeyCode_Shift);
   Bind(f4_search,                                 KeyCode_ForwardSlash);
   Bind(f4_move_down_token_occurrence,             KeyCode_N);
   Bind(f4_move_up_token_occurrence,               KeyCode_N,             KeyCode_Shift);
+  Bind(vim_join_line,                             KeyCode_J,             KeyCode_Shift);
   Bind(vim_motion_to_end_of_file,                 KeyCode_G,             KeyCode_Shift);
   Bind(vim_motion_up,                             KeyCode_K);
   Bind(vim_motion_down,                           KeyCode_J);
   Bind(vim_motion_left,                           KeyCode_H);
   Bind(vim_motion_right,                          KeyCode_L);
-  Bind(vim_motion_word,                           KeyCode_W);
-  Bind(vim_motion_word_end,                       KeyCode_E);
-  Bind(vim_motion_word_backward_end,              KeyCode_B);
-  Bind(vim_motion_word_backward,                  KeyCode_B,             KeyCode_Shift);
+  Bind(vim_motion_word,                           KeyCode_E);
+  Bind(vim_motion_word_end,                       KeyCode_W);
+  Bind(vim_motion_word_backward,                  KeyCode_B);
+  Bind(vim_motion_word_backward_end,              KeyCode_B,             KeyCode_Shift);
   Bind(vim_motion_to_blank_line_up,               KeyCode_LeftBracket,   KeyCode_Shift);
   Bind(vim_motion_to_blank_line_down,             KeyCode_RightBracket,  KeyCode_Shift);
   Bind(vim_motion_to_blank_line_up,               KeyCode_K,             KeyCode_Control);
@@ -306,7 +309,10 @@ function void NL_SetupVimBindings(Mapping *mapping, i64 global_id) {
   Bind(vim_enter_view_mode,                       KeyCode_Z);
   Bind(vim_enter_append_mode,                     KeyCode_A);
   Bind(vim_enter_delete_mode,                     KeyCode_D);
+  Bind(vim_enter_change_mode,                     KeyCode_C);
   Bind(vim_enter_leader_mode,                     KeyCode_Space);
+  Bind(vim_enter_visual_mode,                     KeyCode_V);
+  Bind(vim_enter_visual_line_mode,                KeyCode_V,             KeyCode_Shift);
   
   // NOTE(Nghia Lam): Vim Delete map
   SelectMap(vim_mapid_delete);
@@ -316,6 +322,37 @@ function void NL_SetupVimBindings(Mapping *mapping, i64 global_id) {
   Bind(vim_delete_down,               KeyCode_J);
   Bind(vim_delete_word_end,           KeyCode_E);
   Bind(vim_delete_word_backward,      KeyCode_B);
+  
+  // NOTE(Nghia Lam): Vim Change map
+  SelectMap(vim_mapid_change);
+  Bind(vim_enter_normal_mode,         KeyCode_Escape);
+  Bind(vim_change_word_end,           KeyCode_E);
+  
+  // NOTE(Nghia Lam): Vim Visual map
+  SelectMap(vim_mapid_visual);
+  Bind(vim_enter_normal_mode,                     KeyCode_Escape);
+  Bind(vim_enter_normal_mode,                     KeyCode_V);
+  Bind(vim_visual_delete,                         KeyCode_D);
+  Bind(vim_visual_cut,                            KeyCode_X);
+  Bind(vim_visual_copy,                           KeyCode_Y);
+  Bind(vim_visual_paste,                          KeyCode_P);
+  Bind(vim_motion_to_begin_of_file,               KeyCode_G);
+  Bind(vim_motion_to_end_of_file,                 KeyCode_G,             KeyCode_Shift);
+  Bind(vim_motion_up,                             KeyCode_K);
+  Bind(vim_motion_down,                           KeyCode_J);
+  Bind(vim_motion_left,                           KeyCode_H);
+  Bind(vim_motion_right,                          KeyCode_L);
+  Bind(vim_motion_word,                           KeyCode_E);
+  Bind(vim_motion_word_end,                       KeyCode_W);
+  Bind(vim_motion_word_backward,                  KeyCode_B);
+  Bind(vim_motion_word_backward_end,              KeyCode_B,             KeyCode_Shift);
+  Bind(vim_motion_to_blank_line_up,               KeyCode_LeftBracket,   KeyCode_Shift);
+  Bind(vim_motion_to_blank_line_down,             KeyCode_RightBracket,  KeyCode_Shift);
+  Bind(vim_motion_to_blank_line_up,               KeyCode_K,             KeyCode_Control);
+  Bind(vim_motion_to_blank_line_down,             KeyCode_J,             KeyCode_Control);
+  Bind(vim_view_center,                           KeyCode_Z,             KeyCode_Shift);
+  Bind(seek_beginning_of_textual_line,            KeyCode_H,             KeyCode_Shift);
+  Bind(seek_end_of_textual_line,                  KeyCode_L,             KeyCode_Shift);
   
   // NOTE(Nghia Lam): Vim Yank map
   SelectMap(vim_mapid_yank);
@@ -332,6 +369,7 @@ function void NL_SetupVimBindings(Mapping *mapping, i64 global_id) {
   Bind(vim_enter_normal_mode,          KeyCode_Escape);
   Bind(vim_motion_to_begin_of_file,    KeyCode_G);
   Bind(vim_jump_to_defition_at_cursor, KeyCode_D);
+  Bind(vim_open_file_in_quote,         KeyCode_F);
   
   // NOTE(Nghia Lam): Vim Leader map
   SelectMap(vim_mapid_leader);

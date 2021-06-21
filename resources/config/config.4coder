@@ -29,7 +29,7 @@ enable_undo_fade_out = false;
 // the cursor and mark's roundness as a percentage of their width
 // (At 50 the left and right corners will be so round they form a semi-circle,
 //  hence 50 is the max)
-cursor_roundness = 10;
+cursor_roundness = 30;
 
 // mark_thickness is a pixel count value setting the
 // thickness of the mark wire box in original mode
@@ -40,7 +40,7 @@ mark_thickness = 2;
 lister_roundness = 5;
 
 // Code Wrapping
-treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm.ds.md.4coder.jai.vert.frag";
+treat_as_code = ".cpp.c.hpp.h.cc.cs.java.rs.glsl.m.mm.ds.md.4coder.jai.vert.frag.bat.sh";
 enable_virtual_whitespace = true;
 virtual_whitespace_regular_indent = 2;
 enable_code_wrapping = false;
@@ -65,8 +65,8 @@ default_theme_name = "theme-fleury";
 highlight_line_at_cursor = true;
 
 // Font
-default_font_name = "liberation-mono.ttf";
-default_font_size = 14;
+default_font_name = "SourceCodePro-Regular.ttf";
+default_font_size = 15;
 default_font_hinting = true;
 
 // User

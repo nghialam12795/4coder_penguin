@@ -186,9 +186,10 @@ function void NL_CursorInterpolation(Application_Links *app,
     cursor_size_y = target.y1 - target.y0;
   }
   
+  f32 speed = 40.f;
   if(should_animate_cursor) {
-    rect->x0 += (x_change) * frame_info.animation_dt * 30.f;
-    rect->y0 += (y_change) * frame_info.animation_dt * 30.f;
+    rect->x0 += (x_change) * frame_info.animation_dt * speed;
+    rect->y0 += (y_change) * frame_info.animation_dt * speed;
     rect->x1 = rect->x0 + cursor_size_x;
     rect->y1 = rect->y0 + cursor_size_y;
   }

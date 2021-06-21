@@ -26,7 +26,6 @@
 #if !defined(FCODER_NGHIALAM_VIM)
 #define FCODER_NGHIALAM_VIM
 
-
 //~ NOTE(Nghia Lam): Type definitions and structures
 enum VIMMODE {
   VIMMODE_NORMAL,
@@ -35,6 +34,7 @@ enum VIMMODE {
   VIMMODE_GOTO,
   VIMMODE_VIEW,
   VIMMODE_DELETE,
+  VIMMODE_CHANGE,
   VIMMODE_VISUAL,
   VIMMODE_VISUALINSERT,
   VIMMODE_VISUALLINE,
@@ -84,6 +84,7 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
   String_ID vim_mapid_goto = vars_save_string_lit("keys_goto");
   String_ID vim_mapid_view = vars_save_string_lit("keys_vim_view");
   String_ID vim_mapid_delete = vars_save_string_lit("keys_vim_delete");
+  String_ID vim_mapid_change = vars_save_string_lit("keys_vim_change");
   String_ID vim_mapid_leader = vars_save_string_lit("keys_vim_leader");
   String_ID vim_mapid_leader_buffer = vars_save_string_lit("keys_vim_leader_buffer");
   String_ID vim_mapid_leader_window = vars_save_string_lit("keys_vim_leader_window");
@@ -115,6 +116,10 @@ function void NL_VimEnterMode(Application_Links *app, VIMMODE mode, b32 append) 
     
     case VIMMODE_DELETE: {
       NL_VimChangeMapID(app, buffer, vim_mapid_delete);
+    } break;
+    
+    case VIMMODE_CHANGE: {
+      NL_VimChangeMapID(app, buffer, vim_mapid_change);
     } break;
     
     case VIMMODE_YANK: {

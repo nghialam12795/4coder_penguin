@@ -107,11 +107,11 @@ typedef int socklen_t;
 #include "4coder_nghialam/4coder_nghialam_commands.cpp"
 #include "4coder_nghialam/4coder_nghialam_bindings.cpp"
 
-//~ NOTE(Nghia Lam): 4coder Stuff
+//~ NOTE(Nghia Lam): 4coder Stuff. Remember, only include use this one once.
 #include "generated/managed_id_metadata.cpp"
 
 //~ TODO(Nghia Lam): Create my custom layer
-//  - [ ] VI Model Editing System ??
+//  - [x] VI Model Editing System ?? -> Do we need any more operators ?
 //  - [x] Stuff for rendering
 //  - [ ] My own file bar rendering
 //  - [ ] Project management
@@ -133,8 +133,8 @@ void custom_layer_init(Application_Links *app) {
   mapping_init(tctx, &framework_mapping);
   
   String_ID global_map_id = vars_save_string_lit("keys_global");
-  String_ID file_map_id = vars_save_string_lit("keys_file");
-  String_ID code_map_id = vars_save_string_lit("keys_code");
+  String_ID file_map_id   = vars_save_string_lit("keys_file");
+  String_ID code_map_id   = vars_save_string_lit("keys_code");
   
   NL_SetupNecessaryBindings(&framework_mapping);
   NL_SetupDefaultBindings(&framework_mapping, global_map_id, file_map_id, code_map_id);
@@ -161,8 +161,7 @@ void custom_layer_init(Application_Links *app) {
 function b32 IsFileReadable(String_Const_u8 path) {
   b32 result = 0;
   FILE *file = fopen((char *)path.str, "r");
-  if (file)
-  {
+  if (file) {
     result = 1;
     fclose(file);
   }
@@ -170,8 +169,7 @@ function b32 IsFileReadable(String_Const_u8 path) {
 }
 
 CUSTOM_COMMAND_SIG(fleury_startup)
-CUSTOM_DOC("Fleury startup event")
-{
+CUSTOM_DOC("Fleury startup event") {
   ProfileScope(app, "default startup");
   
   User_Input input = get_current_input(app);
@@ -319,12 +317,10 @@ CUSTOM_DOC("Fleury startup event")
         desc.parameters.hinting = 0;
       }
       
-      if (IsFileReadable(desc.font.file_name))
-      {
+      if (IsFileReadable(desc.font.file_name)) {
         global_styled_title_face = try_create_new_face(app, &desc);
       }
-      else
-      {
+      else {
         global_styled_title_face = face_that_should_totally_be_there;
       }
     }
@@ -340,12 +336,10 @@ CUSTOM_DOC("Fleury startup event")
         desc.parameters.hinting = 0;
       }
       
-      if (IsFileReadable(desc.font.file_name))
-      {
+      if (IsFileReadable(desc.font.file_name)) {
         global_styled_label_face = try_create_new_face(app, &desc);
       }
-      else
-      {
+      else {
         global_styled_label_face = face_that_should_totally_be_there;
       }
     }
